@@ -2950,7 +2950,7 @@ function GeneratePlates(W,H,xWrap,yWrap,Plates)
 								currentSize = currentSize+1
 								break
 							end
-							--TODO a break here prevents multiple rolls for same tile touched by multiple tiles of this plate. BE script has that, probably I should too?
+							break
 						end
 					end
 				end
