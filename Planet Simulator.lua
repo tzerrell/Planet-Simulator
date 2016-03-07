@@ -121,7 +121,7 @@ function MapConstants:New()
 	-------------------------------------------------------------------------------------------
 	--Weather constants
 	-------------------------------------------------------------------------------------------
-	--Important latitude markers used for generating climate. (TODO: Consider switching to BE script values)
+	--Important latitude markers used for generating climate.
 	mconst.polarFrontLatitude = 65
 	mconst.tropicLatitudes = 23
 	mconst.horseLatitudes = 31
@@ -139,7 +139,7 @@ function MapConstants:New()
 	--Crazy rain tweaking variables. I wouldn't touch these if I were you.
 	mconst.minimumRainCost = 0.0001
 	mconst.upLiftExponent = 4
-	mconst.polarRainBoost = 0.00	--TODO: Consider adjusting this and next to BE script values
+	mconst.polarRainBoost = 0.08
 	mconst.pressureNorm = 0.90 --[1.0 = no normalization] Helps to prevent exaggerated Jungle/Marsh banding on the equator. -Bobert13
 
     -------------------------------------------------------------------------------------------
@@ -504,7 +504,7 @@ function MapConstants:InitializeTemperature()
 		self.tundraTemperature = 0.26
 		self.snowTemperature = 0.20
 		
-		self.treesMinTemperature = 0.22
+		self.treesMinTemperature = 0.21
 		self.jungleMinTemperature = 0.60
 
 		self.atollNorthLatitudeLimit = 51
@@ -517,7 +517,7 @@ function MapConstants:InitializeTemperature()
 		self.tundraTemperature = 0.31		--Absolute temperature below which is tundra.
 		self.snowTemperature = 0.26 		--Absolute temperature below which is snow.
 		
-		self.treesMinTemperature = 0.28		--Coldest absolute temperature where trees appear.
+		self.treesMinTemperature = 0.27		--Coldest absolute temperature where trees appear.
 		self.jungleMinTemperature = 0.66	--Coldest absolute temperature allowed to be jungle, forest if colder.
 
 		self.atollNorthLatitudeLimit = 47	--Northern Atoll latitude limit.
@@ -3992,7 +3992,9 @@ function GenerateElevations(W,H,xWrap,yWrap)
 	--If there are too few mountains it can cause deserts to fail to generate and tundra to spread
 	--way too far. This generates additional mountains if not enough uplift occured.
 	if currentUplifted < minUplift then
-		print(string.format("Sum of uplift coefficient values in excess of 1 insufficient at %.2f; adding failsafe mountains", currentUplifted))
+		print(string.format("Sum of uplift coefficient values in excess of 1 insufficient at %.2f; adding failsafe mountains - Planet Simulator", currentUplifted))
+	else
+		print(string.format("Total uplift of %.2f is sufficient, no failsafe mountains needed - Planet Simulator", currentUplifted))
 	end
 	while currentUplifted < minUplift do
 		i = PWRandInt(0, WH - 1)
