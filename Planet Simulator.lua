@@ -860,7 +860,6 @@ function Round(n)
 	end
 end
 -------------------------------------------------------------------------------------------
---TODO: Can remove from here?
 function Push(a,item)
 	table.insert(a,item)
 end
@@ -868,7 +867,6 @@ end
 function Pop(a)
 	return table.remove(a)
 end
---TODO: Can remove to here?
 ------------------------------------------------------------------------
 --inheritance mechanism from http://www.gamedev.net/community/forums/topic.asp?topic_id=561909
 ------------------------------------------------------------------------
