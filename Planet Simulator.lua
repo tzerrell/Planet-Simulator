@@ -821,7 +821,7 @@ function GetMapInitData(worldSize)
 		[GameInfo.Worlds.WORLDSIZE_LARGE.ID] = {104, 64},
 		[GameInfo.Worlds.WORLDSIZE_HUGE.ID] = {128, 80}
 		}
-	--TODO: Re-enable?
+	--TODO: Probably should re-enable
 	--if Map.GetCustomOption(6) == 2 then
 		-- Enlarge terra-style maps to create expansion room on the new world
 		--worldsizes = {
@@ -845,7 +845,7 @@ function GetMapInitData(worldSize)
     end
 end
 -------------------------------------------------------------------------------------------
---TODO: Can remove from here?
+--TODO: Can remove from here? -- BE script appears to have done so
 -- bob Class finite precision math
 --
 -- tobob expects a floating point number
@@ -3477,6 +3477,7 @@ function RiverMap:SetRiverSizes(rainfallMap)
 				nextJunction.size = 0.0
 				break
 			end
+			--TODO: The BE script has some extra river code in this vicinity
 			nextJunction = self:GetJunctionNeighbor(nextJunction.flow,nextJunction)
 		end
 	end
@@ -3494,6 +3495,7 @@ end
 -------------------------------------------------------------------------------------------
 --This function returns the flow directions needed by civ
 function RiverMap:GetFlowDirections(x,y)
+	--TODO: If I merge the BE river changes, perhaps will need to add logic to each case below -- see BE script
 	--print(string.format("Get flow dirs for %d,%d",x,y))
 	local i = elevationMap:GetIndex(x,y)
 
@@ -3682,6 +3684,7 @@ function GeneratePlates(W,H,xWrap,yWrap,Plates)
 								currentSize = currentSize+1
 								break
 							end
+							--TODO a break here prevents multiple rolls for same tile touched by multiple tiles of this plate. BE script has that, probably I should too?
 						end
 					end
 				end
@@ -3769,7 +3772,7 @@ function GeneratePlates(W,H,xWrap,yWrap,Plates)
 end
 -------------------------------------------------------------------------------------------
 function GenerateFaults()
-	--TODO: Merge Bobert13's refactor
+	--TODO: Merge Bobert13's refactor -- although this is pretty close to what PlateMap:GenerateNeighborData() in BE script does, not much to change that I see yet ...
 	--This ubiquitously named function determines plate motions, neighbors, faults, and fault types.
 	local W = PlateMap.width
 	local H = PlateMap.height
@@ -4234,6 +4237,7 @@ function CreatePangealShelf(W,H)
 
 	print(string.format("%d plates flipped, in %d iterations, to make %.2f%% of the map pangeal shelf. - Planet Simulator", contCount, loopCount, contPercent * 100))
 end
+--TODO: Add plate fusing as per BE script?
 -------------------------------------------------------------------------------------------
 function AdjacentContinentalTiles(x,y)
 	--Returns a set containing all directions from the tile at (x,y) for which the
@@ -4254,7 +4258,8 @@ function AdjacentContinentalTiles(x,y)
 	end
 	
 	return returnSet
-end
+end
+
 
 function DetermineLandPattern(landDirs)
 	--[[ Given a set of directions from a central tile in which the pointed-at tile is
@@ -4410,7 +4415,7 @@ function DetermineLandPattern(landDirs)
 				waterDirs:add(dir)
 			end
 		end
-		
+	
 		for dir,_ in pairs(waterDirs) do
 			if waterDirs:contains(mc:GetClockwiseDir(dir)) then
 				pattern = mc.CONTIGUOUS
@@ -4451,7 +4456,7 @@ function DetermineLandPattern(landDirs)
 				print(string.format("%x",dir))
 			end
 		end
-		
+	
 		posTable[mc:GetOppositeDir(waterDir)] = mc.INLAND
 		posTable[mc:GetClockwiseDir(mc:GetClockwiseDir(waterDir))] = mc.INTERMEDIATE
 		posTable[mc:GetCounterclockwiseDir(mc:GetCounterclockwiseDir(waterDir))] = mc.INTERMEDIATE
@@ -4466,7 +4471,7 @@ function DetermineLandPattern(landDirs)
 	else
 		print(string.format("Warning: Unexpected number of land tiles (%i) in DetermineLandPattern",landCount))
 	end
-	
+
 	return pattern, posTable
 end
 
@@ -4628,6 +4633,7 @@ end
 		print(string.format("landDirs:length() == %x",landDirs:length()))
 	end
 end]]
+--TODO: BE script uses ContiguateFaults function to move mountains away from faults I believe
 -------------------------------------------------------------------------------------------
 function GenerateElevations(W,H,xWrap,yWrap)
 	--This function takes all of the data we've generated up to this point and translates it into a crude elevation map.
@@ -4716,7 +4722,7 @@ function GenerateElevations(W,H,xWrap,yWrap)
 			end
 		end
 	end
-	
+
 	--If there are too few mountains it can cause deserts to fail to generate and tundra to spread
 	--way too far. This generates additional mountains if not enough uplift occured.
 	if currentUplifted < minUplift then
@@ -4727,7 +4733,7 @@ function GenerateElevations(W,H,xWrap,yWrap)
 		if GetPlateType(i) == mc.PANGEAL or GetPlateType(i) == mc.CONTINENTAL then
 			--PlateMap.data[i] = PlateMap.data[i] * 6
 			--currentUplifted = currentUplifted + 3 --These mountains are not as well placed as standard mountains, so count for less
-			
+		
 			local x,y = PlateMap:GetXYFromIndex(i)
 			for dir,_ in pairs(mc.DIRECTIONS) do
 				local xx,yy,valid
@@ -4930,7 +4936,7 @@ function GenerateElevationMap(width,height,xWrap,yWrap)
 	end
 
 	elevationMap.seaLevelThreshold = elevationMap:FindThresholdFromPercent(mc.landPercent,true,false)
-	
+
 	--Debug
 	--elevationMap:Save4("elevationMap.data.csv",5)
 
@@ -5189,6 +5195,7 @@ function GenerateRainfallMap(elevationMap)
 		end
 	end
 	rainfallMap:Normalize()
+	--TODO: BE script also looks at polar circle temperatures to determine what forest temp should be. I'll probably skip? but could help getting at target forest tile #
 
 	return rainfallMap, temperatureMap
 end
