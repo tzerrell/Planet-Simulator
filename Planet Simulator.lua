@@ -759,7 +759,7 @@ function GetMapScriptInfo()
                 Name = "Start Placement",
                 Values = {
                     "Start Anywhere",
-                    "Largest Continent"
+                    "All Civs on Largest Continent"
                 },
                 DefaultValue = 1,
                 SortPriority = 1,
@@ -821,18 +821,17 @@ function GetMapInitData(worldSize)
 		[GameInfo.Worlds.WORLDSIZE_LARGE.ID] = {104, 64},
 		[GameInfo.Worlds.WORLDSIZE_HUGE.ID] = {128, 80}
 		}
-	--TODO: Probably should re-enable
-	--if Map.GetCustomOption(6) == 2 then
+	if Map.GetCustomOption(7) == 2 then
 		-- Enlarge terra-style maps to create expansion room on the new world
-		--worldsizes = {
-		--[GameInfo.Worlds.WORLDSIZE_DUEL.ID] = {52, 32},
-		--[GameInfo.Worlds.WORLDSIZE_TINY.ID] = {64, 40},
-		--[GameInfo.Worlds.WORLDSIZE_SMALL.ID] = {84, 52},
-		--[GameInfo.Worlds.WORLDSIZE_STANDARD.ID] = {104, 64},
-		--[GameInfo.Worlds.WORLDSIZE_LARGE.ID] = {122, 76},
-		--[GameInfo.Worlds.WORLDSIZE_HUGE.ID] = {144, 90},
-		--}
-	--end
+		worldsizes = {
+		[GameInfo.Worlds.WORLDSIZE_DUEL.ID] = {52, 32},
+		[GameInfo.Worlds.WORLDSIZE_TINY.ID] = {64, 40},
+		[GameInfo.Worlds.WORLDSIZE_SMALL.ID] = {84, 52},
+		[GameInfo.Worlds.WORLDSIZE_STANDARD.ID] = {104, 64},
+		[GameInfo.Worlds.WORLDSIZE_LARGE.ID] = {122, 76},
+		[GameInfo.Worlds.WORLDSIZE_HUGE.ID] = {144, 90},
+		}
+	end
 	local grid_size = worldsizes[worldSize];
 	--
 	local world = GameInfo.Worlds[worldSize];
@@ -7021,7 +7020,7 @@ function StartPlotSystem()
 		res = 1 + Map.Rand(3, "Random Resources Option - Lua");
 	end
 
-	local starts = Map.GetCustomOption(6)
+	local starts = Map.GetCustomOption(7)
 	local divMethod = nil
 	if starts == 1 then
 		divMethod = 2
