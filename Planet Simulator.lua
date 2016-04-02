@@ -3070,6 +3070,8 @@ function RiverMap:extendUpstream(junction)
 	--
 	--Returns the number of river segments added
 	
+	--TODO: Deal with highly dendritic rivers. May not be from this function.
+	
 	local tributaries = junction.tributaries
 	local tributariesCount = tributaries:length()
 	if tributariesCount == 0 then	--If we are at a headwaters, stop extending
@@ -3090,6 +3092,7 @@ function RiverMap:extendUpstream(junction)
 	end
 	
 	local primaryParent = self:GetJunctionNeighbor(dir, junction)
+	--TODO: Don't allow headwaters touching lakes
 	if self:addRiverSegment(primaryParent, mc:ReverseFlow(dir)) == 0 then
 		return 0
 	end --else fall through
