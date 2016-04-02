@@ -2917,7 +2917,7 @@ function RiverMap:IsTouchingOcean(junction)
 end
 -------------------------------------------------------------------------------------------
 function RiverMap:SetJunctionPrecipitation(rainfallMap)
-	local evaporation = 0
+	local evaporation = 0.03
 	local i = 0
 	
 	for y = 0, elevationMap.height - 1, 1 do
@@ -2953,6 +2953,8 @@ function RiverMap:GetFlowSize(junction)
 	if junction.size < minJunctionSize then junction.size = minJunctionSize end
 	junction.inflowTable[junction.flow] = -junction.size
 	junction.inflowsSet = true
+	
+	--print(string.format("Debug: A junction at %i, %i is size %f", junction.x, junction.y, junction.size))
 	
 	return junction.size
 end
@@ -2990,10 +2992,11 @@ function RiverMap:GenerateRivers()
 	--a branching river.
 	local currentRiverEdgeCount = 0
 	local i = 1
-	table.sort(riverSizeTable, function (a,b) return a.size < b.size end)
+	table.sort(riverSizeTable, function (a,b) return a.size > b.size end)
 	while currentRiverEdgeCount < riverEdgeCountGoal do
-		print("DEBUG: river loop iteration", i)
+		--print("DEBUG: river loop iteration", i)
 		local junction = riverSizeTable[i].junction
+		print(string.format("DEBUG: Selecting junction %i, %i, %s with size %f or %f", junction.x, junction.y, tostring(junction.isNorth), riverSizeTable[i].size, junction.size))
 		currentRiverEdgeCount = currentRiverEdgeCount + self:extendUpstream(junction)
 		currentRiverEdgeCount = currentRiverEdgeCount + self:extendDownstream(junction)
 		i = i + 1
