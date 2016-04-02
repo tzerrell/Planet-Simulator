@@ -2917,7 +2917,7 @@ function RiverMap:IsTouchingOcean(junction)
 end
 -------------------------------------------------------------------------------------------
 function RiverMap:SetJunctionPrecipitation(rainfallMap)
-	local evaporation = 0.05
+	local evaporation = 0
 	local i = 0
 	
 	for y = 0, elevationMap.height - 1, 1 do
