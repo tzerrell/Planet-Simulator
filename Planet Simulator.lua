@@ -46,11 +46,14 @@ function MapConstants:New()
 	setmetatable(mconst, self)
 	self.__index = self
 
+	mconst.MultiPlayer = Game:IsNetworkMultiPlayer()
+
+
+	
 	-------------------------------------------------------------------------------------------
 	--Landmass constants
 	-------------------------------------------------------------------------------------------
 	--(Moved)mconst.landPercent = 0.31 		--Now in InitializeSeaLevel()
-	mconst:InitializeSeaLevel()
 	--(Moved)mconst.hillsPercent = 0.70 		--Now in InitializeWorldAge()
 	--(Moved)mconst.mountainsPercent = 0.94 	--Now in InitializeWorldAge()
 	mconst.landPercentCheat = 0.01	--What proportion of total tiles more continental plate tiles there are than
@@ -59,7 +62,7 @@ function MapConstants:New()
 									--islands other than ones we deliberately added. (Larger numbers may lead to
 									--lakes and smaller numbers to islands, but this is inconsistent.)
 									--Note that this is changed by InitializeIslands() in some cases.
-	mconst.continentalPercent = mconst.landPercent + mconst.landPercentCheat	--Percent of tiles on continental/pangeal plates
+	--mconst.continentalPercent 	--now defined at the end of this function
 
 	--These settings affect Plate Tectonics.
 	--none, yet
@@ -281,9 +284,11 @@ function MapConstants:New()
 		mconst.FREQUENTANDVARIEDISLANDS = 5
 	end
 
-	mconst.MultiPlayer = Game:IsNetworkMultiPlayer()
-
+	
 	mconst:InitializeMapScriptInfoChoices()
+	mconst:InitializeSeaLevel()
+	mconst.continentalPercent = mconst.landPercent + mconst.landPercentCheat	--Percent of tiles on continental/pangeal plates
+
 	mconst:InitializeUpliftCoefficients()
 	mconst:InitializeWorldAge()
 	mconst:InitializeTemperature()
@@ -2917,7 +2922,7 @@ function RiverMap:IsTouchingOcean(junction)
 end
 -------------------------------------------------------------------------------------------
 function RiverMap:SetJunctionPrecipitation(rainfallMap)
-	local evaporation = 0.03
+	local evaporation = -0.05
 	local i = 0
 	
 	for y = 0, elevationMap.height - 1, 1 do
@@ -2959,6 +2964,24 @@ function RiverMap:GetFlowSize(junction)
 	return junction.size
 end
 -------------------------------------------------------------------------------------------
+function RiverMap:EffectiveSizeModifier(junction)
+	--This function makes smaller rivers seem larger on dry tiles, and larger rivers seem
+	--smaller on wet tiles. It does not change how much water flow is passed on to the
+	--next tile, but it changes the effective size of the junction for sorting the junction
+	--sizes in RiverMap:GenerateRivers
+	
+	local localPrecipitation = junction.inflowTable[mc.NOFLOW]
+	
+	
+	--Warning: evaporation needs to match the SetJunctionPrecipitation evap
+	--TODO: Read these from constants
+	local evap = -0.05
+	local adjustedPrecip = localPrecipitation + evap
+	local const = 0.05
+	return 1/(const + adjustedPrecip * adjustedPrecip)
+
+end
+-------------------------------------------------------------------------------------------
 function RiverMap:GenerateRivers()
 	--LL
 	local riverSizeTable = {}
@@ -2971,7 +2994,7 @@ function RiverMap:GenerateRivers()
 		for x = 0,elevationMap.width - 1,1 do
 			for _, boolean in pairs({false,true}) do
 				local junction = self:GetJunction(x,y,boolean)
-				local size = self:GetFlowSize(junction)
+				local size = self:GetFlowSize(junction) * self:EffectiveSizeModifier(junction)
 				if size >= minJunctionSize then
 					riverSizeTable[index] = {junction = junction, size = size}
 					index = index + 1
