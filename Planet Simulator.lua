@@ -2983,9 +2983,6 @@ function RiverMap:EffectiveSizeModifier(junction, temperatureMap)
 	--sizes in RiverMap:GenerateRivers
 	
 	local localPrecipitation = junction.inflowTable[mc.NOFLOW]
-	
-	
-	--TODO: Read these from constants
 	local evaporation = self:GetEvaporation(junction.x, junction.y, temperatureMap)
 	local adjustedPrecip = math.max(localPrecipitation + evaporation - mc.riverEffectiveSizeFloorPlateau, 0)
 	return 1/(mc.riverEffectiveSizeDenominatorBase + adjustedPrecip * adjustedPrecip)
