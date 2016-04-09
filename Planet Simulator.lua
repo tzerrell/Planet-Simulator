@@ -3022,7 +3022,11 @@ function RiverMap:GenerateRivers(temperatureMap)
 	local largestJunctionSize = riverSizeTable[1].size
 	while currentRiverEdgeCount < riverEdgeCountGoal do
 		local index = PWRandInt(1,possibleJunctions)
-		if (PWRand() < 2 * riverSizeTable[index].size / largestJunctionSize) then
+		local addThisRiver = (PWRand() < 2 * riverSizeTable[index].size / largestJunctionSize)	--Probability of adding river propotional to junction size, with 100% chance if >= half of largest junction on map (but this is modified below).
+		local autoSuccessAndFail = PWRandInt(1,10)	--Autofail river creation on a 1, autosucceed on a 10
+		if autoSuccessAndFail == 1 then addThisRiver = false end
+		if autoSuccessAndFail == 10 then addThisRiver = true end
+		if (addThisRiver) then
 			local junction = riverSizeTable[index].junction
 			--print(string.format("DEBUG: Selecting junction %i, %i, %s with size %f or %f", junction.x, junction.y, tostring(junction.isNorth), riverSizeTable[i].size, junction.size))
 			currentRiverEdgeCount = currentRiverEdgeCount + self:extendUpstream(junction)
