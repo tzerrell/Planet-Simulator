@@ -3046,8 +3046,12 @@ function RiverMap:addRiverSegment(junction,dir)
 				print("Warning: cannot add river segment toward nil hex.")
 				return 0
 			end
-			hex.NEOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_SOUTHEAST
-			return 1
+			if hex.NEOfRiverFlow == FlowDirectionTypes.NO_FLOWDIRECTION then
+				hex.NEOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_SOUTHEAST
+				return 1
+			else
+				return 0
+			end
 		else
 			local hexIndex = elevationMap:GetIndex(junction.x,junction.y)
 			if hexIndex == -1 then
@@ -3055,8 +3059,12 @@ function RiverMap:addRiverSegment(junction,dir)
 				return 0
 			end
 			hex = self.riverData[hexIndex]
-			hex.NWOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_NORTHEAST
-			return 1
+			if hex.NWOfRiverFlow == FlowDirectionTypes.NO_FLOWDIRECTION then
+				hex.NWOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_NORTHEAST
+				return 1
+			else
+				return 0
+			end
 		end
 	elseif dir == mc.WESTFLOW then
 		if junction.isNorth then
@@ -3065,8 +3073,12 @@ function RiverMap:addRiverSegment(junction,dir)
 				print("Warning: cannot add river segment toward nil hex.")
 				return 0
 			end
-			hex.NWOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_SOUTHWEST
-			return 1
+			if hex.NWOfRiverFlow == FlowDirectionTypes.NO_FLOWDIRECTION then
+				hex.NWOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_SOUTHWEST
+				return 1
+			else
+				return 0
+			end
 		else
 			local hexIndex = elevationMap:GetIndex(junction.x,junction.y)
 			if hexIndex == -1 then
@@ -3074,13 +3086,20 @@ function RiverMap:addRiverSegment(junction,dir)
 				return 0
 			end
 			hex = self.riverData[hexIndex]
-			hex.NEOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_NORTHWEST
-			return 1
+			if hex.NEOfRiverFlow == FlowDirectionTypes.NO_FLOWDIRECTION then
+				hex.NEOfRiverFlow = FlowDirectionTypes.FLOWDIRECTION_NORTHWEST
+				return 1
+			else
+				return 0
+			end
 		end
 	elseif dir == mc.VERTFLOW then
 		hex = self:GetRiverHexNeighbor(junction, true)
 		if hex == nil then
 			print("Warning: cannot add river segment toward nil hex.")
+			return 0
+		end
+		if hex.WOfRiverFlow ~= FlowDirectionTypes.NO_FLOWDIRECTION then
 			return 0
 		end
 		if junction.isNorth then
