@@ -4266,7 +4266,7 @@ function GenerateTempMaps(elevationMap)
 	return summerMap,winterMap,temperatureMap
 end
 -------------------------------------------------------------------------------------------
-function ConvertInlandOceansToSeas()
+function ConvertInlandOceansToSeas(elevationMap)
 	local W,H = Map.GetGridSize()
 	for n=1, #PlateMap.index, 1 do
 		if PlateMap.type[n] == 0 then
@@ -4289,6 +4289,7 @@ function ConvertInlandOceansToSeas()
 					end
 					--print(string.format("plot is: (%d,%d). index is: %d. Xshift is: %d",x,y,i,shift_x))
 					local plot = Map.GetPlot(x,y)
+					local plotElevIndex = elevationMap:GetIndex(x,y)
 					if plot:GetPlotType() == PlotTypes.PLOT_OCEAN then
 						local lat = elevationMap:GetLatitudeForY(y)
 						if lat < mc.iceNorthLatitudeLimit and lat > mc.iceSouthLatitudeLimit then
@@ -4297,8 +4298,10 @@ function ConvertInlandOceansToSeas()
 								plot:SetTerrainType(GameDefines.SHALLOW_WATER_TERRAIN,false,false)
 							elseif roll > 9 then
 								plot:SetPlotType(PlotTypes.PLOT_HILLS,false,true)
+								elevationMap.data[plotElevIndex] = elevationMap.seaLevelThreshold + 0.05 + 0.05 * PWRand()
 							else
 								plot:SetPlotType(PlotTypes.PLOT_LAND,false,true)
+								elevationMap.data[plotElevIndex] = elevationMap.seaLevelThreshold + 0.005 + 0.005 * PWRand()
 							end
 						else
 							plot:SetTerrainType(GameDefines.SHALLOW_WATER_TERRAIN,false,false)
@@ -4983,7 +4986,7 @@ function GeneratePlotTypes()
 	GenerateCoasts({expansion_diceroll_table = mc.coastExpansionChance});
 	
 	--removes "ocean" tiles from inland seas
-	ConvertInlandOceansToSeas()
+	ConvertInlandOceansToSeas(elevationMap)
 	
 	rainfallMap, temperatureMap = GenerateRainfallMap(elevationMap)
 	riverMap = RiverMap:New(elevationMap)
