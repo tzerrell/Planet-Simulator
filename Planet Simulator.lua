@@ -2982,7 +2982,7 @@ function RiverMap:EffectiveSizeModifier(junction, temperatureMap)
 	--TODO: Read these from constants
 	local evaporation = self:GetEvaporation(junction.x, junction.y, temperatureMap)
 	local adjustedPrecip = math.max(localPrecipitation + evaporation - 0.05, 0)
-	local const = 0.012
+	local const = 0.011
 	return 1/(const + adjustedPrecip * adjustedPrecip)
 
 end
