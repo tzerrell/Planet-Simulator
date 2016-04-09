@@ -4729,6 +4729,50 @@ function GenerateTempMaps(elevationMap)
 	return summerMap,winterMap,temperatureMap
 end
 -------------------------------------------------------------------------------------------
+function ConvertInlandOceansToSeas()
+	local W,H = Map.GetGridSize()
+	for n=1, #PlateMap.index, 1 do
+		if PlateMap.type[n] == 0 then
+			local inlandSea = true
+			for nn=2, #PlateMap.neighbors[n], 1 do
+				if PlateMap.type[GetPlateByID(PlateMap.neighbors[n][nn])] == 0 then
+					inlandSea = false
+					break
+				end
+			end
+			if inlandSea then
+				print("Inland sea, covering "..PlateMap.size[n].." tiles, detected at plate: "..PlateMap.index[n].." - Planet Simulator")
+				for k=1, PlateMap.size[n], 1 do
+					local i = PlateMap.info[n][k]
+					local x = (i%W)
+					local y = (i-x)/W
+					x=x-shift_x
+					if x < 0 then
+						x = x+W
+					end
+					--print(string.format("plot is: (%d,%d). index is: %d. Xshift is: %d",x,y,i,shift_x))
+					local plot = Map.GetPlot(x,y)
+					if plot:GetPlotType() == PlotTypes.PLOT_OCEAN then
+						local lat = elevationMap:GetLatitudeForY(y)
+						if lat < mc.iceNorthLatitudeLimit and lat > mc.iceSouthLatitudeLimit then
+							local roll = PWRandInt(0,100)
+							if roll > 15 then
+								plot:SetTerrainType(GameDefines.SHALLOW_WATER_TERRAIN,false,false)
+							elseif roll > 9 then
+								plot:SetPlotType(PlotTypes.PLOT_HILLS,false,true)
+							else
+								plot:SetPlotType(PlotTypes.PLOT_LAND,false,true)
+							end
+						else
+							plot:SetTerrainType(GameDefines.SHALLOW_WATER_TERRAIN,false,false)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+-------------------------------------------------------------------------------------------
 function GenerateRainfallMap(elevationMap)
 	local summerMap,winterMap,temperatureMap = GenerateTempMaps(elevationMap)
 	--summerMap:Save("summerMap.csv")
@@ -5399,6 +5443,11 @@ function GeneratePlotTypes()
 		end
 	end
 
+	GenerateCoasts({expansion_diceroll_table = mc.coastExpansionChance});
+	
+	--removes "ocean" tiles from inland seas
+	ConvertInlandOceansToSeas()
+	
 	rainfallMap, temperatureMap = GenerateRainfallMap(elevationMap)
 	riverMap = RiverMap:New(elevationMap)
 	riverMap:SetJunctionAltitudes()
@@ -5409,50 +5458,6 @@ function GeneratePlotTypes()
 	riverMap:GenerateRivers(temperatureMap)
 	--Debug -- doesn't work
 	--riverMap:Save4("riverMap.data.csv",5)
-
-	GenerateCoasts({expansion_diceroll_table = mc.coastExpansionChance});
-
-	--removes "ocean" tiles from inland seas
-	for n=1, #PlateMap.index, 1 do
-		if PlateMap.type[n] == 0 then
-			local inlandSea = true
-			for nn=2, #PlateMap.neighbors[n], 1 do
-				if PlateMap.type[GetPlateByID(PlateMap.neighbors[n][nn])] == 0 then
-					inlandSea = false
-					break
-				end
-			end
-			if inlandSea then
-				--print("Inland sea, covering "..PlateMap.size[n].." tiles, detected at plate: "..PlateMap.index[n].." - Planet Simulator")
-				for k=1, PlateMap.size[n], 1 do
-					local i = PlateMap.info[n][k]
-					local x = (i%W)
-					local y = (i-x)/W
-					x=x-shift_x
-					if x < 0 then
-						x = x+W
-					end
-					--print(string.format("plot is: (%d,%d). index is: %d. Xshift is: %d",x,y,i,shift_x))
-					local plot = Map.GetPlot(x,y)
-					if plot:GetPlotType() == PlotTypes.PLOT_OCEAN then
-						local lat = elevationMap:GetLatitudeForY(y)
-						if lat < mc.iceNorthLatitudeLimit and lat > mc.iceSouthLatitudeLimit then
-							local roll = PWRandInt(0,100)
-							if roll > 15 then
-								plot:SetTerrainType(GameDefines.SHALLOW_WATER_TERRAIN,false,false)
-							elseif roll > 9 then
-								plot:SetPlotType(PlotTypes.PLOT_HILLS,false,true)
-							else
-								plot:SetPlotType(PlotTypes.PLOT_LAND,false,true)
-							end
-						else
-							plot:SetTerrainType(GameDefines.SHALLOW_WATER_TERRAIN,false,false)
-						end
-					end
-				end
-			end
-		end
-	end
 end
 ------------------------------------------------------------------------------
 function GenerateTerrain()
