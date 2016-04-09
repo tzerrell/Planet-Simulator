@@ -2981,9 +2981,9 @@ function RiverMap:EffectiveSizeModifier(junction, temperatureMap)
 	
 	--TODO: Read these from constants
 	local evaporation = self:GetEvaporation(junction.x, junction.y, temperatureMap)
-	local adjustedPrecip = localPrecipitation + evaporation
-	local const = 0.001
-	return 1/(const + adjustedPrecip * adjustedPrecip * adjustedPrecip)
+	local adjustedPrecip = math.max(localPrecipitation + evaporation - 0.05, 0)
+	local const = 0.012
+	return 1/(const + adjustedPrecip * adjustedPrecip)
 
 end
 -------------------------------------------------------------------------------------------
@@ -2999,7 +2999,7 @@ function RiverMap:GenerateRivers(temperatureMap)
 		for x = 0,elevationMap.width - 1,1 do
 			for _, boolean in pairs({false,true}) do
 				local junction = self:GetJunction(x,y,boolean)
-				local size = self:GetFlowSize(junction) --* self:EffectiveSizeModifier(junction, temperatureMap)
+				local size = self:GetFlowSize(junction) * self:EffectiveSizeModifier(junction, temperatureMap)
 				if size >= minJunctionSize then
 					riverSizeTable[index] = {junction = junction, size = size}
 					index = index + 1
