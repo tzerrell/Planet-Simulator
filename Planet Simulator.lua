@@ -5449,6 +5449,7 @@ function GeneratePlotTypes()
 	GenerateCoasts({expansion_diceroll_table = mc.coastExpansionChance});
 	
 	--removes "ocean" tiles from inland seas
+	--this only affects inland seas made of a single oceanic plate. I like rare inland oceans, so I'm leaving it -LL
 	ConvertInlandOceansToSeas(elevationMap)
 	
 	rainfallMap, temperatureMap = GenerateRainfallMap(elevationMap)
