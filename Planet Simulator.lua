@@ -109,6 +109,12 @@ function MapConstants:New()
 	--(Moved)mconst.riverRainCheatFactor = 1.6 --Now in InitializeRainfall()
 	--(Moved)mconst.minRiverSize = 24		--Now in InitializeRainfall()
 	mconst.minOceanSize = 5			--Fill in any lakes smaller than this. It looks bad to have large river systems flowing into a tiny lake.
+	
+	--River effective size constants are related to make rivers of the same size more significant (i.e.
+	--more likely to be placed on the map) if they are in drier conditions.
+	--These constants can be extremely sensitive to small changes.
+	mconst.riverEffectiveSizeFloorPlateau = 0.05	--Rivers in conditions drier than this are treated the same as being at this level of dryness. (larger values favor rivers in moderately dry conditions like plains at the expense of rivers in very dry conditions like deserts)
+	mconst.riverEffectiveSizeDenominatorBase = 0.011	--Larger values decrease the impact of river effective size (i.e. make rivers care more about river size than the dryness of the surrounding terrain)
 
 	--(Deprecated)mconst.marshPercent = 0.92 	--Percent of land below the jungle marsh rainfall threshold.
 	--(Moved)mconst.marshElevation = 0.07 	--Now in InitializeRainfall()
@@ -2981,9 +2987,8 @@ function RiverMap:EffectiveSizeModifier(junction, temperatureMap)
 	
 	--TODO: Read these from constants
 	local evaporation = self:GetEvaporation(junction.x, junction.y, temperatureMap)
-	local adjustedPrecip = math.max(localPrecipitation + evaporation - 0.05, 0)
-	local const = 0.011
-	return 1/(const + adjustedPrecip * adjustedPrecip)
+	local adjustedPrecip = math.max(localPrecipitation + evaporation - mc.riverEffectiveSizeFloorPlateau, 0)
+	return 1/(mc.riverEffectiveSizeDenominatorBase + adjustedPrecip * adjustedPrecip)
 
 end
 -------------------------------------------------------------------------------------------
