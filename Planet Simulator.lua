@@ -2999,7 +2999,7 @@ function RiverMap:GenerateRivers(temperatureMap)
 		for x = 0,elevationMap.width - 1,1 do
 			for _, boolean in pairs({false,true}) do
 				local junction = self:GetJunction(x,y,boolean)
-				local size = self:GetFlowSize(junction) * self:EffectiveSizeModifier(junction, temperatureMap)
+				local size = self:GetFlowSize(junction) --* self:EffectiveSizeModifier(junction, temperatureMap)
 				if size >= minJunctionSize then
 					riverSizeTable[index] = {junction = junction, size = size}
 					index = index + 1
