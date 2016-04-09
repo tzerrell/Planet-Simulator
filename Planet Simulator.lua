@@ -2921,12 +2921,13 @@ function RiverMap:IsTouchingOcean(junction)
 	return false
 end
 -------------------------------------------------------------------------------------------
-function RiverMap:SetJunctionPrecipitation(rainfallMap)
-	local evaporation = -0.05
+function RiverMap:SetJunctionPrecipitation(rainfallMap, temperatureMap)
+	--local evaporation = -0.1
 	local i = 0
 	
 	for y = 0, elevationMap.height - 1, 1 do
 		for x = 0, elevationMap.width - 1, 1 do
+			local evaporation = self:GetEvaporation(x,y,temperatureMap)
 			--print("DEBUG 1", x, y)
 			self.riverData[i].northJunction.inflowTable[mc.NOFLOW] = rainfallMap.data[i] - evaporation
 			self.riverData[i].southJunction.inflowTable[mc.NOFLOW] = rainfallMap.data[i] - evaporation
@@ -2964,7 +2965,12 @@ function RiverMap:GetFlowSize(junction)
 	return junction.size
 end
 -------------------------------------------------------------------------------------------
-function RiverMap:EffectiveSizeModifier(junction)
+function RiverMap:GetEvaporation(x, y, temperatureMap)
+	local temperature = temperatureMap.data[elevationMap:GetIndex(x,y)]
+	return temperature * temperature / 10
+end
+-------------------------------------------------------------------------------------------
+function RiverMap:EffectiveSizeModifier(junction, temperatureMap)
 	--This function makes smaller rivers seem larger on dry tiles, and larger rivers seem
 	--smaller on wet tiles. It does not change how much water flow is passed on to the
 	--next tile, but it changes the effective size of the junction for sorting the junction
@@ -2973,16 +2979,15 @@ function RiverMap:EffectiveSizeModifier(junction)
 	local localPrecipitation = junction.inflowTable[mc.NOFLOW]
 	
 	
-	--Warning: evaporation needs to match the SetJunctionPrecipitation evap
 	--TODO: Read these from constants
-	local evap = -0.05
-	local adjustedPrecip = localPrecipitation + evap
-	local const = 0.05
-	return 1/(const + adjustedPrecip * adjustedPrecip)
+	local evaporation = self:GetEvaporation(junction.x, junction.y, temperatureMap)
+	local adjustedPrecip = localPrecipitation + evaporation
+	local const = 0.001
+	return 1/(const + adjustedPrecip * adjustedPrecip * adjustedPrecip)
 
 end
 -------------------------------------------------------------------------------------------
-function RiverMap:GenerateRivers()
+function RiverMap:GenerateRivers(temperatureMap)
 	--LL
 	local riverSizeTable = {}
 	local minJunctionSize = 0.01	--TODO: Read this from a map constant
@@ -2994,7 +2999,7 @@ function RiverMap:GenerateRivers()
 		for x = 0,elevationMap.width - 1,1 do
 			for _, boolean in pairs({false,true}) do
 				local junction = self:GetJunction(x,y,boolean)
-				local size = self:GetFlowSize(junction) * self:EffectiveSizeModifier(junction)
+				local size = self:GetFlowSize(junction) * self:EffectiveSizeModifier(junction, temperatureMap)
 				if size >= minJunctionSize then
 					riverSizeTable[index] = {junction = junction, size = size}
 					index = index + 1
@@ -5400,8 +5405,8 @@ function GeneratePlotTypes()
 	riverMap:SiltifyLakes()
 	riverMap:SetFlowDestinations()
 	--riverMap:SetRiverSizes(rainfallMap)
-	riverMap:SetJunctionPrecipitation(rainfallMap)
-	riverMap:GenerateRivers()
+	riverMap:SetJunctionPrecipitation(rainfallMap, temperatureMap)
+	riverMap:GenerateRivers(temperatureMap)
 	--Debug -- doesn't work
 	--riverMap:Save4("riverMap.data.csv",5)
 
