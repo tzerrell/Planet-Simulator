@@ -2992,7 +2992,7 @@ function RiverMap:GenerateRivers(temperatureMap)
 	local riverSizeTable = {}
 	local minJunctionSize = 0.01	--TODO: Read this from a map constant
 	local riverEdgeCountGoal = mc.landPercent * mc.riverPercent *
-		elevationMap.height * elevationMap.width * 3
+		elevationMap.height * elevationMap.width * 3/2	--TODO: The /2 is a hack to make this like earlier versions. Should remove /2 and instead adjust mc.riverPercent.
 	
 	local index = 0
 	for y = 0,elevationMap.height - 1,1 do
@@ -3022,7 +3022,7 @@ function RiverMap:GenerateRivers(temperatureMap)
 	local largestJunctionSize = riverSizeTable[1].size
 	while currentRiverEdgeCount < riverEdgeCountGoal do
 		local index = PWRandInt(1,possibleJunctions)
-		if (PWRand() < riverSizeTable[index].size / largestJunctionSize) then
+		if (PWRand() < 2 * riverSizeTable[index].size / largestJunctionSize) then
 			local junction = riverSizeTable[index].junction
 			--print(string.format("DEBUG: Selecting junction %i, %i, %s with size %f or %f", junction.x, junction.y, tostring(junction.isNorth), riverSizeTable[i].size, junction.size))
 			currentRiverEdgeCount = currentRiverEdgeCount + self:extendUpstream(junction)
