@@ -3024,7 +3024,7 @@ function RiverMap:GenerateRivers(temperatureMap)
 	while currentRiverEdgeCount < riverEdgeCountGoal do
 		--print("DEBUG: river loop iteration", i)
 		local junction = riverSizeTable[i].junction
-		print(string.format("DEBUG: Selecting junction %i, %i, %s with size %f or %f", junction.x, junction.y, tostring(junction.isNorth), riverSizeTable[i].size, junction.size))
+		--print(string.format("DEBUG: Selecting junction %i, %i, %s with size %f or %f", junction.x, junction.y, tostring(junction.isNorth), riverSizeTable[i].size, junction.size))
 		currentRiverEdgeCount = currentRiverEdgeCount + self:extendUpstream(junction)
 		currentRiverEdgeCount = currentRiverEdgeCount + self:extendDownstream(junction)
 		i = i + 1
