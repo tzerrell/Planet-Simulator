@@ -3008,26 +3008,26 @@ function RiverMap:GenerateRivers(temperatureMap)
 		end
 	end
 	
-	--On the ith iteration, extend a full-length river (from headwaters to mouth) from the ith-largest
-	--junction (This junction selection process will often be repetitive; extendUpstream and 
-	--extendDownstream halt as soon as they reach segments they've already extended, which can be
-	--immediately). The hope is that this will create long rivers (since they always extend all the way
-	--to one of their headwaters) but will not cause rivers in large drylands unless part of the river 
-	--is in a wet area.
+	--On each iteration, check to extend a full-length river (from headwaters to mouth) from a randomly
+	--selected junction; only extend with probability proportional to size of junction. The hope is that 
+	--this will create long rivers (since they always extend all the way to one of their headwaters) but 
+	--will not cause many rivers in large drylands unless part of the river is in a wet area.
 	--
 	--No single iteration of this loop will cause a branching river, but if it starts at a junction
 	--that ultimately flows into a river that's already been constructed, then the end result will be
 	--a branching river.
 	local currentRiverEdgeCount = 0
-	local i = 1
+	local possibleJunctions = #riverSizeTable
 	table.sort(riverSizeTable, function (a,b) return a.size > b.size end)
+	local largestJunctionSize = riverSizeTable[1].size
 	while currentRiverEdgeCount < riverEdgeCountGoal do
-		--print("DEBUG: river loop iteration", i)
-		local junction = riverSizeTable[i].junction
-		--print(string.format("DEBUG: Selecting junction %i, %i, %s with size %f or %f", junction.x, junction.y, tostring(junction.isNorth), riverSizeTable[i].size, junction.size))
-		currentRiverEdgeCount = currentRiverEdgeCount + self:extendUpstream(junction)
-		currentRiverEdgeCount = currentRiverEdgeCount + self:extendDownstream(junction)
-		i = i + 1
+		local index = PWRandInt(1,possibleJunctions)
+		if (PWRand() < riverSizeTable[index].size / largestJunctionSize) then
+			local junction = riverSizeTable[index].junction
+			--print(string.format("DEBUG: Selecting junction %i, %i, %s with size %f or %f", junction.x, junction.y, tostring(junction.isNorth), riverSizeTable[i].size, junction.size))
+			currentRiverEdgeCount = currentRiverEdgeCount + self:extendUpstream(junction)
+			currentRiverEdgeCount = currentRiverEdgeCount + self:extendDownstream(junction)
+		end
 	end
 end
 -------------------------------------------------------------------------------------------
