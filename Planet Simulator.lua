@@ -116,6 +116,7 @@ function MapConstants:New()
 	mconst.riverEffectiveSizeFloorPlateau = 0.05	--Rivers in conditions drier than this are treated the same as being at this level of dryness. (larger values favor rivers in moderately dry conditions like plains at the expense of rivers in very dry conditions like deserts)
 	mconst.riverEffectiveSizeDenominatorBase = 0.011	--Larger values decrease the impact of river effective size (i.e. make rivers care more about river size than the dryness of the surrounding terrain)
 	mconst.minRiverJunctionSize = 0.01		--Smallest junction size that can appear in a river
+	mconst.evaporationCoeff = 0.1			--Multiply this by temp to get amount evaporated from river at junction. Larger means more evaporation.
 	
 	--(Deprecated)mconst.marshPercent = 0.92 	--Percent of land below the jungle marsh rainfall threshold.
 	--(Moved)mconst.marshElevation = 0.07 	--Now in InitializeRainfall()
@@ -2974,7 +2975,7 @@ end
 -------------------------------------------------------------------------------------------
 function RiverMap:GetEvaporation(x, y, temperatureMap)
 	local temperature = temperatureMap.data[elevationMap:GetIndex(x,y)]
-	return temperature * temperature / 10
+	return temperature * temperature * mc.evaporationCoeff
 end
 -------------------------------------------------------------------------------------------
 function RiverMap:EffectiveSizeModifier(junction, temperatureMap)
