@@ -115,7 +115,8 @@ function MapConstants:New()
 	--These constants can be extremely sensitive to small changes.
 	mconst.riverEffectiveSizeFloorPlateau = 0.05	--Rivers in conditions drier than this are treated the same as being at this level of dryness. (larger values favor rivers in moderately dry conditions like plains at the expense of rivers in very dry conditions like deserts)
 	mconst.riverEffectiveSizeDenominatorBase = 0.011	--Larger values decrease the impact of river effective size (i.e. make rivers care more about river size than the dryness of the surrounding terrain)
-
+	mconst.minRiverJunctionSize = 0.01		--Smallest junction size that can appear in a river
+	
 	--(Deprecated)mconst.marshPercent = 0.92 	--Percent of land below the jungle marsh rainfall threshold.
 	--(Moved)mconst.marshElevation = 0.07 	--Now in InitializeRainfall()
 
@@ -2992,7 +2993,6 @@ end
 function RiverMap:GenerateRivers(temperatureMap)
 	--LL
 	local riverSizeTable = {}
-	local minJunctionSize = 0.01	--TODO: Read this from a map constant
 	local riverEdgeCountGoal = mc.landPercent * mc.riverPercent *
 		elevationMap.height * elevationMap.width * 3/2	--TODO: The /2 is a hack to make this like earlier versions. Should remove /2 and instead adjust mc.riverPercent.
 	
@@ -3002,7 +3002,7 @@ function RiverMap:GenerateRivers(temperatureMap)
 			for _, boolean in pairs({false,true}) do
 				local junction = self:GetJunction(x,y,boolean)
 				local size = self:GetFlowSize(junction) * self:EffectiveSizeModifier(junction, temperatureMap)
-				if size >= minJunctionSize then
+				if size >= mc.minRiverJunctionSize then
 					riverSizeTable[index] = {junction = junction, size = size}
 					index = index + 1
 				end
