@@ -733,7 +733,7 @@ function MapConstants:InitializeRainfall()
 		self.zeroTreesPercent = 0.78
 		self.junglePercent = 0.94
 		
-		self.riverPercent = 0.14
+		self.riverPercent = 0.06
 		self.riverRainCheatFactor = 1.2
 		self.minRiverSize = 32
 		self.marshElevation = 0.04
@@ -744,7 +744,7 @@ function MapConstants:InitializeRainfall()
 		self.zeroTreesPercent = 0.62
 		self.junglePercent = 0.80
 		
-		self.riverPercent = 0.25
+		self.riverPercent = 0.11
 		self.riverRainCheatFactor = 1.6
 		self.minRiverSize = 16
 		self.marshElevation = 0.10
@@ -755,7 +755,7 @@ function MapConstants:InitializeRainfall()
 		self.zeroTreesPercent = 0.70 	--Percent of land that is below the rainfall threshold where no trees can appear.
 		self.junglePercent = 0.88 		--Percent of land below the jungle rainfall threshold.
 		
-		self.riverPercent = 0.18 		--percent of river junctions that are large enough to become rivers.
+		self.riverPercent = 0.08 		--percent of river junctions that are large enough to become rivers.
 		self.riverRainCheatFactor = 1.6 --This value is multiplied by each river step. Values greater than one favor watershed size. Values less than one favor actual rain amount.
 		self.minRiverSize = 24			--Helps to prevent a lot of really short rivers. Recommended values are 15 to 40. -Bobert13
 		self.marshElevation = 0.07 		--Percent of land below the lowlands marsh threshold.
@@ -2991,10 +2991,9 @@ function RiverMap:EffectiveSizeModifier(junction, temperatureMap)
 end
 -------------------------------------------------------------------------------------------
 function RiverMap:GenerateRivers(temperatureMap)
-	--LL
 	local riverSizeTable = {}
 	local riverEdgeCountGoal = mc.landPercent * mc.riverPercent *
-		elevationMap.height * elevationMap.width * 3/2	--TODO: The /2 is a hack to make this like earlier versions. Should remove /2 and instead adjust mc.riverPercent.
+		elevationMap.height * elevationMap.width * 3
 	
 	local index = 0
 	for y = 0,elevationMap.height - 1,1 do
