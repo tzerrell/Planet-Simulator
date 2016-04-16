@@ -6527,8 +6527,9 @@ function AssignStartingPlots:CanBeThisNaturalWonderType(x, y, wn, rn)
 	table.insert(self.eligibility_lists[wn], plotIndex);
 end
 -------------------------------------------------------------------------------------------
-function AssignStartingPlots:AttemptToPlaceNaturalWonderMOD(wonder_number, row_number)
+function AssignStartingPlots:AttemptToPlaceNaturalWonder(wonder_number, row_number)
 	-- Attempts to place a specific natural wonder. The "wonder_number" is a Lua index while "row_number" is an XML index.
+	print("Debug: Using Custom AttemptToPlaceNaturalWonder - PlanetSimulator")
 	local iW, iH = Map.GetGridSize();
 	local feature_type_to_place;
 	for thisFeature in GameInfo.Features() do
@@ -6581,19 +6582,12 @@ function AssignStartingPlots:AttemptToPlaceNaturalWonderMOD(wonder_number, row_n
 			-- Now place this wonder and record the placement.
 			plot:SetFeatureType(feature_type_to_place)
 			table.insert(self.placed_natural_wonder, wonder_number);
-            if wonder_number == 1 then
-                Game.SetPlotExtraYield(x,y,YieldTypes.YIELD_CULTURE, 3)
-            elseif wonder_number == 3 then
-                Game.SetPlotExtraYield(x,y,YieldTypes.YIELD_FAITH, 3)
-            elseif wonder_number == 6 then
-                Game.SetPlotExtraYield(x,y,YieldTypes.YIELD_CULTURE, 3)
-            end
 			self:PlaceResourceImpact(x, y, 6, math.floor(iH / 5))	-- Natural Wonders layer
 			self:PlaceResourceImpact(x, y, 1, 1)					-- Strategic layer
 			self:PlaceResourceImpact(x, y, 2, 1)					-- Luxury layer
 			self:PlaceResourceImpact(x, y, 3, 1)					-- Bonus layer
-			self:PlaceResourceImpact(x, y, 5, 1)					-- City State layer
-			self:PlaceResourceImpact(x, y, Round(iH / 11), 1)		-- Marble layer
+			self:PlaceResourceImpact(x, y, 5, 3)					-- City State layer
+			self:PlaceResourceImpact(x, y, 7, 1)					-- Marble layer
 			local plotIndex = y * iW + x + 1;
 			self.playerCollisionData[plotIndex] = true;				-- Record exact plot of wonder in the collision list.
 			--
@@ -6695,7 +6689,7 @@ function AssignStartingPlots:PlaceNaturalWondersMOD()
 	--
 
 end
--------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 function StartPlotSystem()
 	-- Get Resources setting input by user.
 	local res = Map.GetCustomOption(5)
