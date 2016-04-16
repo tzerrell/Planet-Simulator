@@ -6554,7 +6554,6 @@ end
 -------------------------------------------------------------------------------------------
 function AssignStartingPlots:AttemptToPlaceNaturalWonder(wonder_number, row_number)
 	-- Attempts to place a specific natural wonder. The "wonder_number" is a Lua index while "row_number" is an XML index.
-	print("Debug: Using Custom AttemptToPlaceNaturalWonder - PlanetSimulator")
 	local iW, iH = Map.GetGridSize();
 	local feature_type_to_place;
 	for thisFeature in GameInfo.Features() do
@@ -6611,7 +6610,7 @@ function AssignStartingPlots:AttemptToPlaceNaturalWonder(wonder_number, row_numb
 			self:PlaceResourceImpact(x, y, 1, 1)					-- Strategic layer
 			self:PlaceResourceImpact(x, y, 2, 1)					-- Luxury layer
 			self:PlaceResourceImpact(x, y, 3, 1)					-- Bonus layer
-			self:PlaceResourceImpact(x, y, 5, 3)					-- City State layer
+			self:PlaceResourceImpact(x, y, 5, 3)					-- City State layer (Note: Using magic number 3 for impact radius)
 			self:PlaceResourceImpact(x, y, 7, 1)					-- Marble layer
 			local plotIndex = y * iW + x + 1;
 			self.playerCollisionData[plotIndex] = true;				-- Record exact plot of wonder in the collision list.
