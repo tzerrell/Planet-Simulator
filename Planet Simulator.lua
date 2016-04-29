@@ -9,6 +9,13 @@
 --used to create the landforms.
 --
 --Version History
+--LL3	- Bugfix: Sea levels no longer always generate as "Low" regardless of option chosen
+--		- Bugfix: Rivers ending in inland seas no longer sometimes end before reaching the sea
+--		- Bugfix: Terra-style start placement available (as "All Civs on Largest Continent")
+--		- Adjusted plate generation based on Beyond Earth version of Planet Simulator
+--		- Tweaked rainfall constants based on Beyond Earth version
+--		- Internal: Marked more opportunities to integrate Beyond Earth version's code (with "TODO" and a description)
+--		- Internal: Cleaned up deprecated code
 --LL2	- Prevented "inland" seas from generating when one of the boundaries is an
 --		  ice cap. This also slightly reduces the rate of continents going into the ice caps
 --		- Added additional failsafe elevation generation when very few mountains are generated
