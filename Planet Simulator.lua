@@ -14,6 +14,7 @@
 --		- Bugfix: Terra-style start placement available (as "All Civs on Largest Continent")
 --		- Adjusted plate generation based on Beyond Earth version of Planet Simulator
 --		- Tweaked rainfall constants based on Beyond Earth version
+--		- Removed non-existent "Other" option from "Map Preset"
 --		- Internal: Marked more opportunities to integrate Beyond Earth version's code (with "TODO" and a description)
 --		- Internal: Cleaned up deprecated code
 --LL2	- Prevented "inland" seas from generating when one of the boundaries is an
@@ -758,8 +759,7 @@ function GetMapScriptInfo()
 				Values =
 				{
 					"Continents",
-					"Pangaea",
-					"Other (n/a)"
+					"Pangaea"
 				},
 				DefaultValue = 1,
 				SortPriority = 2,
