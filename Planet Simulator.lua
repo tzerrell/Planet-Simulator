@@ -3081,19 +3081,7 @@ function GenerateFaults()
 				PlateMap.fault[i] = mc.MINORFAULT	--When a tile is adjacent to a tile from a different plate,
 													--there is at least a minor fault there -LL
 				local add = true
-				--[[
-				TODO: Got an error here once. The original error seemed to come from above (see TODO above).
-				Error info follows:
-				Map Script: Error - Attempted to get plate index for an invalid ID
-Runtime Error: C:\Users\tnc02_000\Documents\My Games\Sid Meier's Civilization 5\Maps\Planet Simulator.lua:3083: attempt to get length of field '?' (a nil value)
-stack traceback:
-	C:\Users\tnc02_000\Documents\My Games\Sid Meier's Civilization 5\Maps\Planet Simulator.lua:3083: in function 'GenerateFaults'
-	C:\Users\tnc02_000\Documents\My Games\Sid Meier's Civilization 5\Maps\Planet Simulator.lua:4065: in function 'SimulateTectonics'
-	C:\Users\tnc02_000\Documents\My Games\Sid Meier's Civilization 5\Maps\Planet Simulator.lua:4145: in function 'GenerateElevationMap'
-	C:\Users\tnc02_000\Documents\My Games\Sid Meier's Civilization 5\Maps\Planet Simulator.lua:4926: in function 'GeneratePlotTypes'
-	Assets\DLC\Expansion2\Gameplay\Lua\MapGenerator.lua:787: in function <Assets\DLC\Expansion2\Gameplay\Lua\MapGenerator.lua:779>
-	=[C]: ?
-				]]
+				--TODO: Got an error here once. The original error seemed to come from above (see TODO above).
 				for m = 1, #PlateMap.neighbors[index], 1 do
 					if PlateMap.neighbors[index][m] == PlateMap.ID[k] then
 						add = false
@@ -4063,6 +4051,10 @@ function GetPlateByID(ID)
 	end
 
 	print("Error - Attempted to get plate index for an invalid ID")
+	print("ID requested:" .. ID .. "valid IDs follow:")
+	for i = 1, #PlateMap.index do
+		print(PlateMap.index[i])
+	end
 end
 -------------------------------------------------------------------------------------------
 function GetPlateType(k)
