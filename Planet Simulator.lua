@@ -3929,7 +3929,7 @@ function GenerateElevations(W,H,xWrap,yWrap)
 
     -- local landFactor = mc.continentalPercent/contPercent
     local landFactor = contPercent/mc.continentalPercent
-	local minUplift = 140
+	local minUplift = 120 + 0.04 * WH
 	local currentUplifted = 0
 	for i = 0, WH-1, 1 do
 		if GetPlateType(i) == mc.PANGEAL or GetPlateType(i) == mc.CONTINENTAL then
