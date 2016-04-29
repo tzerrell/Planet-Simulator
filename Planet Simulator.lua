@@ -45,12 +45,13 @@ function MapConstants:New()
 	local mconst = {}
 	setmetatable(mconst, self)
 	self.__index = self
+	
+	mconst.MultiPlayer = Game:IsNetworkMultiPlayer()
 
 	-------------------------------------------------------------------------------------------
 	--Landmass constants
 	-------------------------------------------------------------------------------------------
 	--(Moved)mconst.landPercent = 0.31 		--Now in InitializeSeaLevel()
-	mconst:InitializeSeaLevel()
 	--(Moved)mconst.hillsPercent = 0.70 		--Now in InitializeWorldAge()
 	--(Moved)mconst.mountainsPercent = 0.94 	--Now in InitializeWorldAge()
 	mconst.landPercentCheat = 0.01	--What proportion of total tiles more continental plate tiles there are than
@@ -59,7 +60,7 @@ function MapConstants:New()
 									--islands other than ones we deliberately added. (Larger numbers may lead to
 									--lakes and smaller numbers to islands, but this is inconsistent.)
 									--Note that this is changed by InitializeIslands() in some cases.
-	mconst.continentalPercent = mconst.landPercent + mconst.landPercentCheat	--Percent of tiles on continental/pangeal plates
+	--mconst.continentalPercent	--now defined at the end of this function
 
 	--These settings affect Plate Tectonics.
 	--none, yet
@@ -220,7 +221,8 @@ function MapConstants:New()
 	mconst.CONVERGENTFAULT = 4
 	mconst.FALLBACKFAULT = 5	--Not a true fault, used where a fake fault is needed
 
-	mconst.MultiPlayer = Game:IsNetworkMultiPlayer()
+	mconst:InitializeSeaLevel()
+	mconst.continentalPercent = mconst.landPercent + mconst.landPercentCheat	--Percent of tiles on continental/pangeal plates
 
 	mconst:InitializeUpliftCoefficients()
 	mconst:InitializeWorldAge()
