@@ -1,3 +1,558 @@
+function AssignStartingPlots:__CustomInit()
+	-- This function included to provide a quick and easy override for changing 
+	-- any initial settings. Add your customized version to the map script.
+	--TODO: This function is empty in base CiV -- this is the setup for the Communitas ASP functions
+	if not debugPrint then
+		print = function() end
+	end
+	--]]
+	self.AdjustTiles = AssignStartingPlots.AdjustTiles
+	self.BuffIslands = AssignStartingPlots.BuffIslands
+	self.PlaceBonusResources = AssignStartingPlots.PlaceBonusResources
+	--self.CalculateStrategicPlotWeights = AssignStartingPlots.CalculateStrategicPlotWeights
+	--self.PlaceStrategicAndBonusResourcesCEP = AssignStartingPlots.PlaceStrategicAndBonusResourcesCEP
+	self.islandAreaBuffed = {}
+	--self.plotResInfo = {}
+	--self.impactData = {}
+end	
+------------------------------------------------------------------------------
+function AssignStartingPlots:MeasureStartPlacementFertilityOfPlot(x, y, checkForCoastalLand)
+	--TODO: The base CiV version of this is rather more elaborate; and Plot_GetFertility doesn't exist in base CiV, so check there
+	return Plot_GetFertility(Map.GetPlot(x, y))
+end
+------------------------------------------------------------------------------
+function AssignStartingPlots:GenerateRegions(args)
+	--print("Map Generation - Dividing the map in to Regions");	--TODO: Communitas commented this out
+	-- This function stores its data in the instance (self) data table.
+	--
+	-- The "Three Methods" of regional division:
+	-- 1. Biggest Landmass: All civs start on the biggest landmass.
+	-- 2. Continental: Civs are assigned to continents. Any continents with more than one civ are divided.
+	-- 3. Rectangular: Civs start within a given rectangle that spans the whole map, without regard to landmass sizes.
+	--                 This method is primarily applied to Archipelago and other maps with lots of tiny islands.
+	-- 4. Rectangular: Civs start within a given rectangle defined by arguments passed in on the function call.
+	--                 Arguments required for this method: iWestX, iSouthY, iWidth, iHeight
+	local args = args or {};
+	local iW, iH = Map.GetGridSize();
+	self.method = args.method or self.method; -- Continental method is default.
+	self.resource_setting = args.resources or 2; -- Each map script has to pass in parameter for Resource setting chosen by user.
+
+	-- Determine number of civilizations and city states present in this game.
+	self.iNumCivs, self.iNumCityStates, self.player_ID_list, self.bTeamGame, self.teams_with_major_civs, self.number_civs_per_team = GetPlayerAndTeamInfo()
+	self.iNumCityStatesUnassigned = self.iNumCityStates;
+	--print("-"); print("Civs:", self.iNumCivs); print("City States:", self.iNumCityStates);--TODO: Communitas commented this out
+
+	if self.method == 1 then -- Biggest Landmass
+		-- Identify the biggest landmass.
+		local biggest_area = Map.FindBiggestArea(False);
+		local iAreaID = biggest_area:GetID();
+		-- We'll need all eight data fields returned in the results table from the boundary finder:
+		local landmass_data = ObtainLandmassBoundaries(iAreaID);
+		local iWestX = landmass_data[1];
+		local iSouthY = landmass_data[2];
+		local iEastX = landmass_data[3];
+		local iNorthY = landmass_data[4];
+		local iWidth = landmass_data[5];
+		local iHeight = landmass_data[6];
+		local wrapsX = landmass_data[7];
+		local wrapsY = landmass_data[8];
+		
+		-- Obtain "Start Placement Fertility" of the landmass. (This measurement is customized for start placement).
+		-- This call returns a table recording fertility of all plots within a rectangle that contains the landmass,
+		-- with a zero value for any plots not part of the landmass -- plus a fertility sum and plot count.
+		local fert_table, fertCount, plotCount = self:MeasureStartPlacementFertilityOfLandmass(iAreaID, 
+		                                         iWestX, iEastX, iSouthY, iNorthY, wrapsX, wrapsY);
+		-- Now divide this landmass in to regions, one per civ.
+		-- The regional divider requires three arguments:
+		-- 1. Number of divisions. (For "Biggest Landmass" this means number of civs in the game).
+		-- 2. Fertility table. (This was obtained from the last call.)
+		-- 3. Rectangle table. This table includes seven data fields:
+		-- westX, southY, width, height, AreaID, fertilityCount, plotCount
+		-- This is why we got the fertCount and plotCount from the fertility function.
+		--
+		-- Assemble the Rectangle data table:
+		local rect_table = {iWestX, iSouthY, iWidth, iHeight, iAreaID, fertCount, plotCount};
+		-- The data from this call is processed in to self.regionData during the process.
+		self:DivideIntoRegions(self.iNumCivs, fert_table, rect_table)
+		-- The regions have been defined.
+	
+	elseif self.method == 3 or self.method == 4 then -- Rectangular
+		-- Obtain the boundaries of the rectangle to be processed.
+		-- If no coords were passed via the args table, default to processing the entire map.
+		-- Note that it matters if method 3 or 4 is designated, because the difference affects
+		-- how city states are placed, whether they look for any uninhabited lands outside the rectangle.
+		self.inhabited_WestX = args.iWestX or 0;
+		self.inhabited_SouthY = args.iSouthY or 0;
+		self.inhabited_Width = args.iWidth or iW;
+		self.inhabited_Height = args.iHeight or iH;
+		
+		-- Obtain "Start Placement Fertility" inside the rectangle.
+		-- Data returned is: fertility table, sum of all fertility, plot count.
+		local fert_table, fertCount, plotCount = self:MeasureStartPlacementFertilityInRectangle(self.inhabited_WestX, 
+		                                         self.inhabited_SouthY, self.inhabited_Width, self.inhabited_Height)
+		-- Assemble the Rectangle data table:
+		local rect_table = {self.inhabited_WestX, self.inhabited_SouthY, self.inhabited_Width, 
+		                    self.inhabited_Height, -1, fertCount, plotCount}; -- AreaID -1 means ignore area IDs.
+		-- Divide the rectangle.
+		self:DivideIntoRegions(self.iNumCivs, fert_table, rect_table)
+		-- The regions have been defined.
+	
+	else -- Continental.
+		--[[ Loop through all plots on the map, measuring fertility of each land 
+		     plot, identifying its AreaID, building a list of landmass AreaIDs, and
+		     tallying the Start Placement Fertility for each landmass. ]]--
+
+		-- region_data: [WestX, EastX, SouthY, NorthY, 
+		-- numLandPlotsinRegion, numCoastalPlotsinRegion,
+		-- numOceanPlotsinRegion, iRegionNetYield, 
+		-- iNumLandAreas, iNumPlotsinRegion]
+		local best_areas = {};
+		local globalFertilityOfLands = {};
+
+		-- Obtain info on all landmasses for comparision purposes.
+		local iGlobalFertilityOfLands = 0;
+		local iNumLandPlots = 0;
+		local iNumLandAreas = 0;
+		local land_area_IDs = {};
+		local land_area_plots = {};
+		local land_area_fert = {};
+		-- Cycle through all plots in the world, checking their Start Placement Fertility and AreaID.
+		for x = 0, iW - 1 do
+			for y = 0, iH - 1 do
+				local i = y * iW + x + 1;
+				local plot = Map.GetPlot(x, y);
+				if not plot:IsWater() then -- Land plot, process it.
+					iNumLandPlots = iNumLandPlots + 1;
+					local iArea = plot:GetArea();
+					local plotFertility = self:MeasureStartPlacementFertilityOfPlot(x, y, true); -- Check for coastal land is enabled.
+					iGlobalFertilityOfLands = iGlobalFertilityOfLands + plotFertility;
+					--
+					if TestMembership(land_area_IDs, iArea) == false then -- This plot is the first detected in its AreaID.
+						iNumLandAreas = iNumLandAreas + 1;
+						table.insert(land_area_IDs, iArea);
+						land_area_plots[iArea] = 1;
+						land_area_fert[iArea] = plotFertility;
+					else -- This AreaID already known.
+						land_area_plots[iArea] = land_area_plots[iArea] + 1;
+						land_area_fert[iArea] = land_area_fert[iArea] + plotFertility;
+					end
+				end
+			end
+		end
+		
+		--[[ Debug printout
+		print("* * * * * * * * * *");
+		for area_loop, AreaID in ipairs(land_area_IDs) do
+			print("Area ID " .. AreaID .. " is land.");
+		end
+		--	--TODO: This second print section appeared to not be commented out in base CiV
+		print("* * * * * * * * * *");
+		for AreaID, fert in pairs(land_area_fert) do
+			print("Area ID " .. AreaID .. " has fertility of " .. fert);
+		end
+		print("* * * * * * * * * *");
+		--]]
+		
+		-- Sort areas, achieving a list of AreaIDs with best areas first.
+		--
+		-- Fertility data in land_area_fert is stored with areaID index keys.
+		-- Need to generate a version of this table with indices of 1 to n, where n is number of land areas.
+		local interim_table = {};
+		for loop_index, data_entry in pairs(land_area_fert) do
+			table.insert(interim_table, data_entry);
+		end
+		
+		--[[for AreaID, fert in ipairs(interim_table) do
+			print("Interim Table ID " .. AreaID .. " has fertility of " .. fert);
+		end
+		print("* * * * * * * * * *"); ]]--
+		
+		-- Sort the fertility values stored in the interim table. Sort order in Lua is lowest to highest.
+		table.sort(interim_table);
+
+		--[[	--TODO: This print section not commented out in base CiV
+		for AreaID, fert in ipairs(interim_table) do
+			print("Interim Table ID " .. AreaID .. " has fertility of " .. fert);
+		end
+		print("* * * * * * * * * *");
+		--]]
+
+		-- If less players than landmasses, we will ignore the extra landmasses.
+		local iNumRelevantLandAreas = math.min(iNumLandAreas, self.iNumCivs);
+		-- Now re-match the AreaID numbers with their corresponding fertility values
+		-- by comparing the original fertility table with the sorted interim table.
+		-- During this comparison, best_areas will be constructed from sorted AreaIDs, richest stored first.
+		local best_areas = {};
+		-- Currently, the best yields are at the end of the interim table. We need to step backward from there.
+		local end_of_interim_table = table.maxn(interim_table);
+		-- We may not need all entries in the table. Process only iNumRelevantLandAreas worth of table entries.
+		local fertility_value_list = {};
+		local fertility_value_tie = false;
+		for tableConstructionLoop = end_of_interim_table, (end_of_interim_table - iNumRelevantLandAreas + 1), -1 do
+			if TestMembership(fertility_value_list, interim_table[tableConstructionLoop]) == true then
+				fertility_value_tie = true;
+				print("*** WARNING: Fertility Value Tie exists! ***");
+			else
+				table.insert(fertility_value_list, interim_table[tableConstructionLoop]);
+			end
+		end
+
+		if fertility_value_tie == false then -- No ties, so no need of special handling for ties.
+			for areaTestLoop = end_of_interim_table, (end_of_interim_table - iNumRelevantLandAreas + 1), -1 do
+				for loop_index, AreaID in ipairs(land_area_IDs) do
+					if interim_table[areaTestLoop] == land_area_fert[land_area_IDs[loop_index]] then
+						table.insert(best_areas, AreaID);
+						break
+					end
+				end
+			end
+		else -- Ties exist! Special handling required to protect against a shortfall in the number of defined regions.
+			local iNumUniqueFertValues = table.maxn(fertility_value_list);
+			for fertLoop = 1, iNumUniqueFertValues do
+				for AreaID, fert in pairs(land_area_fert) do
+					if fert == fertility_value_list[fertLoop] then
+						-- Add ties only if there is room!
+						local best_areas_length = table.maxn(best_areas);
+						if best_areas_length < iNumRelevantLandAreas then
+							table.insert(best_areas, AreaID);
+						else
+							break
+						end
+					end
+				end
+			end
+		end
+				
+		--[[ Debug printout	--TODO: Print section not commented out in base CiV
+		print("-"); print("--- Continental Division, Initial Readout ---"); print("-");
+		print("- Global Fertility:", iGlobalFertilityOfLands);
+		print("- Total Land Plots:", iNumLandPlots);
+		print("- Total Areas:", iNumLandAreas);
+		print("- Relevant Areas:", iNumRelevantLandAreas); print("-");
+		--]]
+
+		--[[ Debug printout	--TODO: This print section not commented out in base CiV
+		print("* * * * * * * * * *");
+		for area_loop, AreaID in ipairs(best_areas) do
+			print("Area ID " .. AreaID .. " has fertility of " .. land_area_fert[AreaID]);
+		end
+		print("* * * * * * * * * *");
+		--]]
+
+		-- Assign continents to receive start plots. Record number of civs assigned to each landmass.
+		local inhabitedAreaIDs = {};
+		local numberOfCivsPerArea = table.fill(0, iNumRelevantLandAreas); -- Indexed in synch with best_areas. Use same index to match values from each table.
+		for civToAssign = 1, self.iNumCivs do
+			local bestRemainingArea;
+			local bestRemainingFertility = 0;
+			local bestAreaTableIndex;
+			-- Loop through areas, find the one with the best remaining fertility (civs added 
+			-- to a landmass reduces its fertility rating for subsequent civs).
+			--
+			--print("- - Searching landmasses in order to place Civ #", civToAssign); print("-");	--TODO: Not commented out in base CiV
+			for area_loop, AreaID in ipairs(best_areas) do
+				local thisLandmassCurrentFertility = land_area_fert[AreaID] / (1 + numberOfCivsPerArea[area_loop]);
+				if thisLandmassCurrentFertility > bestRemainingFertility then
+					bestRemainingArea = AreaID;
+					bestRemainingFertility = thisLandmassCurrentFertility;
+					bestAreaTableIndex = area_loop;
+					--
+					--print("- Found new candidate landmass with Area ID#:", bestRemainingArea, " with fertility of ", bestRemainingFertility);	--TODO: Not commented out in base CiV
+				end
+			end
+			-- Record results for this pass. (A landmass has been assigned to receive one more start point than it previously had).
+			numberOfCivsPerArea[bestAreaTableIndex] = numberOfCivsPerArea[bestAreaTableIndex] + 1;
+			if TestMembership(inhabitedAreaIDs, bestRemainingArea) == false then
+				table.insert(inhabitedAreaIDs, bestRemainingArea);
+			end
+			--print("Civ #", civToAssign, "has been assigned to Area#", bestRemainingArea); print("-");
+		end
+		--print("-"); print("--- End of Initial Readout ---"); print("-");	--TODO: Not commented out in base CiV
+		
+		--[[print("*** Number of Civs per Landmass - Table Readout ***");	--TODO: this print section not commented out in base CiV
+		PrintContentsOfTable(numberOfCivsPerArea)
+		print("--- End of Civs per Landmass readout ***"); print("-"); print("-");
+		--]]
+		-- Loop through the list of inhabited landmasses, dividing each landmass in to regions.
+		-- Note that it is OK to divide a continent with one civ on it: this will assign the whole
+		-- of the landmass to a single region, and is the easiest method of recording such a region.
+		local iNumInhabitedLandmasses = table.maxn(inhabitedAreaIDs);
+		for loop, currentLandmassID in ipairs(inhabitedAreaIDs) do
+			-- Obtain the boundaries of and data for this landmass.
+			local landmass_data = ObtainLandmassBoundaries(currentLandmassID);
+			local iWestX = landmass_data[1];
+			local iSouthY = landmass_data[2];
+			local iEastX = landmass_data[3];
+			local iNorthY = landmass_data[4];
+			local iWidth = landmass_data[5];
+			local iHeight = landmass_data[6];
+			local wrapsX = landmass_data[7];
+			local wrapsY = landmass_data[8];
+			-- Obtain "Start Placement Fertility" of the current landmass. (Necessary to do this
+			-- again because the fert_table can't be built prior to finding boundaries, and we had
+			-- to ID the proper landmasses via fertility to be able to figure out their boundaries.
+			local fert_table, fertCount, plotCount = self:MeasureStartPlacementFertilityOfLandmass(currentLandmassID, 
+		  	                                         iWestX, iEastX, iSouthY, iNorthY, wrapsX, wrapsY);
+			-- Assemble the rectangle data for this landmass.
+			local rect_table = {iWestX, iSouthY, iWidth, iHeight, currentLandmassID, fertCount, plotCount};
+			-- Divide this landmass in to number of regions equal to civs assigned here.
+			iNumCivsOnThisLandmass = numberOfCivsPerArea[loop];
+			if iNumCivsOnThisLandmass > 0 and iNumCivsOnThisLandmass <= 22 then -- valid number of civs.
+			
+				--[[ Debug printout for regional division inputs.	--TODO: This print section not commented out in base CiV
+				print("-"); print("- Region #: ", loop);
+				print("- Civs on this landmass: ", iNumCivsOnThisLandmass);
+				print("- Area ID#: ", currentLandmassID);
+				print("- Fertility: ", fertCount);
+				print("- Plot Count: ", plotCount); print("-");
+				--]]
+			
+				self:DivideIntoRegions(iNumCivsOnThisLandmass, fert_table, rect_table)
+			else
+				print("Invalid number of civs assigned to a landmass: ", iNumCivsOnThisLandmass);
+			end
+		end
+		--
+		-- The regions have been defined.
+	end
+	
+	-- Entry point for easier overrides.
+	self:CustomOverride()
+	
+	--[[ Printout is for debugging only. Deactivate otherwise.	--TODO: This print block not commented out in base CiV
+	local tempRegionData = self.regionData;
+	for i, data in ipairs(tempRegionData) do
+		print("-");
+		print("Data for Start Region #", i);
+		print("WestX:  ", data[1]);
+		print("SouthY: ", data[2]);
+		print("Width:  ", data[3]);
+		print("Height: ", data[4]);
+		print("AreaID: ", data[5]);
+		print("Fertility:", data[6]);
+		print("Plots:  ", data[7]);
+		print("Fert/Plot:", data[8]);
+		print("-");
+	end
+	--]]
+end
+------------------------------------------------------------------------------
+function AssignStartingPlots:ExaminePlotForNaturalWondersEligibility(x, y)
+	-- This function checks only for eligibility requirements applicable to all 
+	-- Natural Wonders. If a candidate plot passes all such checks, we will move
+	-- on to checking it against specific needs for each particular wonderID.
+	--
+	-- Update, May 2011: Control over wonderID placement is being migrated to XML. Some checks here moved to there.
+	local iW, iH = Map.GetGridSize();
+	local plotIndex = iW * y + x + 1;
+	
+	-- Check for collision with player starts
+	if self.naturalWondersData[plotIndex] > 0 then
+		return false
+	end
+	
+	--TODO: The next chunk is novel to Communitas
+	-- Check the location is a decent city site, otherwise the wonderID is pointless
+	local plot = Map.GetPlot(x, y);
+	if Plot_GetFertilityInRange(plot, 3) < 12 then
+		return false
+	end
+	return true
+end
+------------------------------------------------------------------------------
+function AssignStartingPlots:PlaceNaturalWonders()
+	local NW_eligibility_order = self:GenerateNaturalWondersCandidatePlotLists()
+	local iNumNWCandidates = table.maxn(NW_eligibility_order);
+	if iNumNWCandidates == 0 then
+		print("No Natural Wonders placed, no eligible sites found for any of them.");
+		return
+	end
+	
+	--[[ Debug printout	--TODO: This print block was somewhat rewritten and commented out by Communitas
+	print("-"); print("--- Readout of wonderID Assignment Priority ---");
+	for loop, wonderID in ipairs(NW_eligibility_order) do
+		print("wonderID Assignment Priority#", loop, "goes to wonderID ", self.wonder_list[wonderID]);
+	end
+	print("-"); print("-"); --]]
+	
+	-- Determine how many NWs to attempt to place. Target is regulated per map size.
+	-- The final number cannot exceed the number the map has locations to support.
+	local target_number = mg.numNaturalWonders;	--TODO: This line compacts the base CiV code (which likely lacks mg.numNaturalWonders)
+	local iNumNWtoPlace = math.min(target_number, iNumNWCandidates);
+	local selected_NWs, fallback_NWs = {}, {};
+	for loop, wonderID in ipairs(NW_eligibility_order) do
+		if loop <= iNumNWtoPlace then
+			table.insert(selected_NWs, wonderID);
+		else
+			table.insert(fallback_NWs, wonderID);
+		end
+	end
+	
+	--[[	--TODO: Communitas slightly adjusted and commented out this print block
+	print("-");
+	for loop, wonderID in ipairs(selected_NWs) do
+		print("Natural Wonder ", self.wonder_list[wonderID], "has been selected for placement.");
+	end
+	print("-");
+	for loop, wonderID in ipairs(fallback_NWs) do
+		print("Natural Wonder ", self.wonder_list[wonderID], "has been selected as fallback.");
+	end
+	print("-");
+	--
+	print("--- Placing Natural Wonders! ---");
+	--]]
+	
+	-- Place the NWs
+	local iNumPlaced = 0;
+	for loop, nw_number in ipairs(selected_NWs) do
+		local nw_type = self.wonder_list[nw_number];
+		-- Obtain the correct Row number from the xml Placement table.
+		local row_number;
+		for row in GameInfo.Natural_Wonder_Placement() do
+			if row.NaturalWonderType == nw_type then
+				row_number = row.ID;
+			end
+		end
+		-- Place the wonder, using the correct row data from XML.
+		local bSuccess = self:AttemptToPlaceNaturalWonder(nw_number, row_number)
+		if bSuccess then
+			iNumPlaced = iNumPlaced + 1;
+		end
+	end
+	if iNumPlaced < iNumNWtoPlace then
+		for loop, nw_number in ipairs(fallback_NWs) do
+			if iNumPlaced >= iNumNWtoPlace then
+				break
+			end
+			local nw_type = self.wonder_list[nw_number];
+			-- Obtain the correct Row number from the xml Placement table.
+			local row_number;
+			for row in GameInfo.Natural_Wonder_Placement() do
+				if row.NaturalWonderType == nw_type then
+					row_number = row.ID;
+				end
+			end
+			-- Place the wonder, using the correct row data from XML.
+			local bSuccess = self:AttemptToPlaceNaturalWonder(nw_number, row_number)
+			if bSuccess then
+				iNumPlaced = iNumPlaced + 1;
+			end
+		end
+	end
+	
+	--
+	if iNumPlaced >= iNumNWtoPlace then
+		print("-- Placed all Natural Wonders --"); print("-"); print("-");
+	else
+		print("-- Not all Natural Wonders targeted got placed --"); print("-"); print("-");
+	end
+	--
+		
+end
+------------------------------------------------------------------------------
+function AssignStartingPlots:CanPlaceCityStateAt(x, y, area_ID, force_it, ignore_collisions)
+	--TODO: Function in same spirit as base CiV, but many details changed.
+	--TODO: Essentially, removed functionality preventing snow sites, but also
+	--added functionality preventing placement near natural wonders or on particularly fertile sites
+	local iW, iH = Map.GetGridSize();
+	local plot = Map.GetPlot(x, y)
+	local area = plot:GetArea()
+	if area ~= area_ID and area_ID ~= -1 then
+		return false
+	end
+	
+	if plot:IsWater() or plot:IsMountain() then
+		return false
+	end
+	
+	-- Avoid natural wonders
+	for nearPlot in Plot_GetPlotsInCircle(plot, 1, 4) do
+		local featureInfo = GameInfo.Features[nearPlot:GetFeatureType()]
+		if featureInfo and featureInfo.NaturalWonder then
+			log:Debug("CanPlaceCityStateAt: avoided natural wonder %s", featureInfo.Type)
+			return false
+		end
+	end
+	
+	-- Reserve the best city sites for major civs
+	local fertility = Plot_GetFertilityInRange(plot, 2)
+	if fertility > 28 then
+		log:Trace("CanPlaceCityStateAt: avoided fertility %s", fertility)
+		return false
+	end
+	
+	local plotIndex = y * iW + x + 1;
+	if self.cityStateData[plotIndex] > 0 and force_it == false then
+		return false
+	end
+	local plotIndex = y * iW + x + 1;
+	if self.playerCollisionData[plotIndex] == true and ignore_collisions == false then
+		--print("-"); print("City State candidate plot rejected: collided with already-placed civ or City State at", x, y);
+		return false
+	end
+	return true
+end
+------------------------------------------------------------------------------
+function AssignStartingPlots:PlaceCityStateInRegion(city_state_number, region_number)
+	--print("Place City State in Region called for City State", city_state_number, "Region", region_number);
+	local iW, iH = Map.GetGridSize();
+	local placed_city_state = false;
+	local reached_middle = false;
+	local region_data_table = self.regionData[region_number];
+	local iWestX = region_data_table[1];
+	local iSouthY = region_data_table[2];
+	local iWidth = region_data_table[3];
+	local iHeight = region_data_table[4];
+	local iAreaID = region_data_table[5];
+	
+	local eligible_coastal, eligible_inland = {}, {};
+	
+	-- Main loop, first pass, unforced
+	local x, y;
+	local curWX = iWestX;
+	local curSY = iSouthY;
+	local curWid = iWidth;
+	local curHei = iHeight;
+	while placed_city_state == false and reached_middle == false do
+		-- Send the remaining unprocessed portion of the region to be processed.
+		local nextWX, nextSY, nextWid, nextHei;
+		eligible_coastal, eligible_inland, nextWX, nextSY, nextWid, nextHei, 
+		  reached_middle = self:ObtainNextSectionInRegion(curWX, curSY, curWid, curHei, iAreaID, false, false) -- Don't force it. Yet.
+		curWX, curSY, curWid, curHei = nextWX, nextSY, nextWid, nextHei;
+		-- Attempt to place city state using the two plot lists received from the last call.
+		x, y, placed_city_state = self:PlaceCityState(eligible_coastal, eligible_inland, false, false) -- Don't need to re-check collisions.
+	end
+
+	--TODO: Communitas removed commented out code on fallback citystate placement
+	if placed_city_state == true then
+		-- Record and enact the placement.
+		self.cityStatePlots[city_state_number] = {x, y, region_number};
+		self.city_state_validity_table[city_state_number] = true; -- This is the line that marks a city state as valid to be processed by the rest of the system.
+		local city_state_ID = city_state_number + GameDefines.MAX_MAJOR_CIVS - 1;
+		local cityState = Players[city_state_ID];
+		local cs_start_plot = Map.GetPlot(x, y)
+		cityState:SetStartingPlot(cs_start_plot)
+		self:GenerateLuxuryPlotListsAtCitySite(x, y, 1, true) -- Removes Feature Ice from coasts near to the city state's new location
+		self:PlaceResourceImpact(x, y, 5, 4) -- City State layer
+		self:PlaceResourceImpact(x, y, 2, 3) -- Luxury layer
+		self:PlaceResourceImpact(x, y, 3, 3) -- Bonus layer
+		self:PlaceResourceImpact(x, y, 4, 3) -- Fish layer
+		self:PlaceResourceImpact(x, y, 7, 3) -- Marble layer
+		--TODO: For non-militaristic states Communitas blocks strategics out to radius 3 (base CiV only blocks strategics at start point regardless of city state type)
+		if cityState:GetMinorCivTrait() == MinorCivTraitTypes.MINOR_CIV_TRAIT_MILITARISTIC then
+			self:PlaceResourceImpact(x, y, 1, 0) -- Strategic layer, at start point only.
+		else
+			self:PlaceResourceImpact(x, y, 1, 3) -- Strategic layer
+		end
+		local impactPlotIndex = y * iW + x + 1;
+		self.playerCollisionData[impactPlotIndex] = true;
+		--print("-"); print("City State", city_state_number, "has been started at Plot", x, y, "in Region#", region_number);
+	else
+		--print("-"); print("WARNING: Crowding issues for City State #", city_state_number, " - Could not find valid site in Region#", region_number);
+		self.iNumCityStatesDiscarded = self.iNumCityStatesDiscarded + 1;
+	end
+end
+--..**----------------------------------------------------------------------------
 function AssignStartingPlots:BuffIslands()
 	--TODO: This entire function is novel to Communitas (and won't be called without overriding PlaceResourcesAndCityStates)
 	print("Buffing Tiny Islands")
