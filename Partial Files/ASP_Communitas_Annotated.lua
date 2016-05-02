@@ -145,7 +145,7 @@ function AssignStartingPlots:GenerateRegions(args)
 		for area_loop, AreaID in ipairs(land_area_IDs) do
 			print("Area ID " .. AreaID .. " is land.");
 		end
-		--	--TODO: This second print section appeared to not be commented out in base CiV
+		--	--TODO: This second print section is not commented out in base CiV
 		print("* * * * * * * * * *");
 		for AreaID, fert in pairs(land_area_fert) do
 			print("Area ID " .. AreaID .. " has fertility of " .. fert);
@@ -265,7 +265,7 @@ function AssignStartingPlots:GenerateRegions(args)
 			if TestMembership(inhabitedAreaIDs, bestRemainingArea) == false then
 				table.insert(inhabitedAreaIDs, bestRemainingArea);
 			end
-			--print("Civ #", civToAssign, "has been assigned to Area#", bestRemainingArea); print("-");
+			--print("Civ #", civToAssign, "has been assigned to Area#", bestRemainingArea); print("-");	--TODO: Not commented out in base Civ
 		end
 		--print("-"); print("--- End of Initial Readout ---"); print("-");	--TODO: Not commented out in base CiV
 		
@@ -605,7 +605,7 @@ function AssignStartingPlots:BuffIslands()
 end
 ------------------------------------------------------------------------------
 function AssignStartingPlots:AdjustTiles()
-	--	TODO: This is a rename of FixSugarJungle with some additional adjustments
+	--	TODO: This is a rename of FixSugarJungle with some additional adjustments (which are individually annotated below)
 	-- Sugar could not be made to look good in both jungle and open/marsh at the same time.
 	-- Jon and I decided the best workaround would be to turn any Sugar/Jungle in to Marsh.
 	local iW, iH = Map.GetGridSize()
@@ -758,13 +758,13 @@ function AssignStartingPlots:ProcessResourceList(frequency, impact_table_number,
 						local x = (plotIndex - 1) % iW;
 						local y = (plotIndex - x - 1) / iW;
 						local res_plot = Map.GetPlot(x, y)
-						if res_plot:GetResourceType() == -1 then -- Placing this strategic resource in this plot.
+						if res_plot:GetResourceType() == -1 then -- Placing this strategic resource in this plot. TODO: Base Civ passes -1 to GetResourceType; reason for change unclear
 							local res_addition = 0;
 							if res_range[use_this_res_index] ~= -1 then
 								res_addition = Map.Rand(res_range[use_this_res_index], "Resource Radius - Place Resource LUA");
 							end
 							local randValue = Map.Rand(self.resource_setting + 1, "Place Strategic Resource - Lua")
-							local quantity = res_quantity[use_this_res_index] + randValue	--TODO: Note last line and this added slight randomization to resource amount
+							local quantity = res_quantity[use_this_res_index] + randValue	--TODO: Note previous line and this added slight randomization to resource amount
 							--print(string.format("ProcessResourceList table 1, Resource: %20s, Quantity: %s + %s - 1", GameInfo.Resources[res_ID[use_this_res_index]].Type, res_quantity[use_this_res_index], randValue));
 							res_plot:SetResourceType(res_ID[use_this_res_index], quantity);
 							if (Game.GetResourceUsageType(res_ID[use_this_res_index]) == ResourceUsageTypes.RESOURCEUSAGE_LUXURY) then
@@ -780,7 +780,7 @@ function AssignStartingPlots:ProcessResourceList(frequency, impact_table_number,
 						local x = (plotIndex - 1) % iW;
 						local y = (plotIndex - x - 1) / iW;
 						local res_plot = Map.GetPlot(x, y)
-						if res_plot:GetResourceType() == -1 then -- Placing this luxury resource in this plot. --TODO: Line very slightly modded; reason unclear
+						if res_plot:GetResourceType() == -1 then -- Placing this luxury resource in this plot. --TODO: Base Civ passes -1 to GetResourceType
 							local res_addition = 0;
 							if res_range[use_this_res_index] ~= -1 then
 								res_addition = Map.Rand(res_range[use_this_res_index], "Resource Radius - Place Resource LUA");
@@ -797,7 +797,7 @@ function AssignStartingPlots:ProcessResourceList(frequency, impact_table_number,
 						local x = (plotIndex - 1) % iW;
 						local y = (plotIndex - x - 1) / iW;
 						local res_plot = Map.GetPlot(x, y)
-						if res_plot:GetResourceType() == -1 then -- Placing this bonus resource in this plot. --TODO: Line very slightly modded; reason unclear
+						if res_plot:GetResourceType() == -1 then -- Placing this bonus resource in this plot. --TODO: Base Civ passes -1 to GetResourceType
 							local res_addition = 0;
 							if res_range[use_this_res_index] ~= -1 then
 								res_addition = Map.Rand(res_range[use_this_res_index], "Resource Radius - Place Resource LUA");
@@ -824,7 +824,7 @@ function AssignStartingPlots:ProcessResourceList(frequency, impact_table_number,
 						local x = (plotIndex - 1) % iW;
 						local y = (plotIndex - x - 1) / iW;
 						local res_plot = Map.GetPlot(x, y)
-						if res_plot:GetResourceType() == -1 then --TODO: Line very slightly modded; reason unclear
+						if res_plot:GetResourceType() == -1 then --TODO: Base Civ passes -1 to GetResourceType
 							lowest_impact = self.strategicData[plotIndex];
 							best_plot = plotIndex;
 						end
@@ -924,7 +924,7 @@ function AssignStartingPlots:PlaceSpecificNumberOfResources(resource_ID, quantit
 	-- Main loop
 	for place_resource = 1, iNumResources do
 		for loop, plotIndex in ipairs(plot_list) do
-			if not bCheckImpact or impact_table[plotIndex] == 0 then
+			if not bCheckImpact or impact_table[plotIndex] == 0 then	--TODO: base civ uses  bCheckImpact == false  instead; reason for change unclear
 				local x = (plotIndex - 1) % iW;
 				local y = (plotIndex - x - 1) / iW;
 				local res_plot = Map.GetPlot(x, y)
@@ -1156,6 +1156,7 @@ function AssignStartingPlots:PlaceStrategicAndBonusResources()
 end
 ------------------------------------------------------------------------------
 function AssignStartingPlots:PlaceFish()
+	--TODO: This function significantly rewritten by Communitas
 	print("AssignStartingPlots:PlaceFish()")
 	for plotID, plot in Plots(Shuffle) do
 		PlacePossibleFish(plot)
@@ -1330,7 +1331,7 @@ function AssignStartingPlots:PlaceResourcesAndCityStates()
 	--]]
 	self:PlaceStrategicAndBonusResources()
 	
-	--print("Map Generation - Normalize City State Locations");
+	--print("Map Generation - Normalize City State Locations");	--TODO: Communitas commented this out
 	self:NormalizeCityStateLocations()
 	
 	-- Fix Sugar graphics	--TODO: This is just a rename
@@ -1367,7 +1368,7 @@ function AssignStartingPlots:PlaceResourcesAndCityStates()
 end
 ------------------------------------------------------------------------------
 function AssignStartingPlots:NormalizeStartLocation(region_number)
-	--TODO: This is included in Communitas.lua, but I don't know why as it seems identical to base CiV; perhaps do an actual diff to confirm?
+	--TODO: This is included in Communitas.lua, but I don't know why as it is identical to base CiV as confirmed by a diff
 	--[[ This function measures the value of land in two rings around a given start
 	     location, primarily for the purpose of determining how much support the site
 	     requires in the form of Bonus Resources. Numerous assumptions are built in 
@@ -2108,7 +2109,7 @@ function AssignStartingPlots:BalanceAndAssign()
 			if CivNeedsPlaceFirstCoastalStart then	--TODO: This outer if statement is new to communitas, but the inner part is in base CiV. Not sure where CivNeedsPlaceFirstCoastalStart is defined.
 				local bPlaceFirst = CivNeedsPlaceFirstCoastalStart(civType);
 				if bPlaceFirst then
-					--print("- - - - - - - needs to Place First!"); --print("-");
+					--print("- - - - - - - needs to Place First!"); --print("-");	--TODO: Communitas commented this out
 					table.insert(civs_priority_coastal_start, playerNum);
 				end
 			end
@@ -2179,7 +2180,9 @@ function AssignStartingPlots:BalanceAndAssign()
 			iNumUnassignableCoastStarts = iNumCoastalCivs - (iNumRegionsWithCoastalStart + iNumRegionsWithLakeStart);
 		end
 		-- Now assign those with coastal bias to start locations, where possible.
-		--TODO: Two print statements removed by Communitas here from base CiV version
+		--TODO: The two print statements below entirely removed by Communitas here from base CiV version
+		--print("iNumCoastalCivs: " .. iNumCoastalCivs);
+		--print("iNumUnassignableCoastStarts: " .. iNumUnassignableCoastStarts);
 		if iNumCoastalCivs - iNumUnassignableCoastStarts > 0 then
 			-- create non-priority coastal start list
 			local non_priority_coastal_start = {};
