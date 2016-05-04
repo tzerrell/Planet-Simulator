@@ -5644,6 +5644,229 @@ function AddRivers()
 	end
 end
 -------------------------------------------------------------------------------------------
+function StartPlotSystem()
+	-- Get Resources setting input by user.
+	local res = Map.GetCustomOption(5)
+	if res == 6 then
+		res = 1 + Map.Rand(3, "Random Resources Option - Lua");
+	end
+
+	local starts = Map.GetCustomOption(7)
+	local divMethod = nil
+	if starts == 1 then
+		divMethod = 2
+	else
+		divMethod = 1
+	end
+
+	print("Creating start plot database.");
+	local start_plot_database = AssignStartingPlots.Create()
+
+	print("Dividing the map in to Regions.");
+	-- Regional Division Method 2: Continental or 1:Terra
+	local args = {
+		method = divMethod,
+		resources = res,
+		};
+	start_plot_database:GenerateRegions(args)
+
+	print("Choosing start locations for civilizations.");
+	start_plot_database:ChooseLocations()
+
+	print("Normalizing start locations and assigning them to Players.");
+	start_plot_database:BalanceAndAssign()
+
+	print("Placing Natural Wonders.");
+    if YieldTypes.YIELD_FAITH then
+        --print("Expansion detected; using modified NW placement.")
+        PlaceNaturalWonders = PlaceNaturalWondersMOD
+    -- else
+        --print("No expansion detected; using vanilla NW placement.")
+    end
+    start_plot_database:PlaceNaturalWonders()
+
+	print("Placing Resources and City States.");
+	start_plot_database:PlaceResourcesAndCityStates()
+end
+-------------------------------------------------------------------------------------------
+function oceanMatch(x,y)
+	local plot = Map.GetPlot(x,y)
+	if plot:GetPlotType() == PlotTypes.PLOT_OCEAN then
+		return true
+	end
+	return false
+end
+-------------------------------------------------------------------------------------------
+-- function jungleMatch(x,y)
+	-- local terrainGrass	= GameInfoTypes["TERRAIN_GRASS"];
+	-- local plot = Map.GetPlot(x,y)
+	-- if plot:GetFeatureType() == FeatureTypes.FEATURE_JUNGLE then
+		-- return true
+	-- --include any mountains on the border as part of the desert.
+	-- elseif (plot:GetFeatureType() == FeatureTypes.FEATURE_MARSH or plot:GetFeatureType() == FeatureTypes.FEATURE_FOREST) and plot:GetTerrainType() == terrainGrass then
+		-- local nList = elevationMap:GetRadiusAroundHex(x,y,1,W)
+		-- for n=1,#nList do
+			-- local ii = nList[n]
+			-- if 11 ~= -1 then
+				-- local nPlot = Map.GetPlotByIndex(ii)
+				-- if nPlot:GetFeatureType() == FeatureTypes.FEATURE_JUNGLE then
+					-- return true
+				-- end
+			-- end
+		-- end
+	-- end
+	-- return false
+-- end
+-------------------------------------------------------------------------------------------
+function desertMatch(i)
+	local W,H = Map.GetGridSize();
+	local terrainDesert	= GameInfoTypes["TERRAIN_DESERT"];
+	local plot = Map.GetPlotByIndex(i)
+	if plot:GetTerrainType() == terrainDesert then
+		return true
+	--include any mountains on the border as part of the desert.
+	elseif plot:GetPlotType() == PlotTypes.PLOT_MOUNTAIN then
+		local nList = GetCircle(i,1)
+		for n=1,#nList do
+			local ii = nList[n]
+			if 11 ~= -1 then
+				local nPlot = Map.GetPlotByIndex(ii)
+				if nPlot:GetPlotType() ~= PlotTypes.PLOT_MOUNTAIN and nPlot:GetTerrainType() == terrainDesert then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+-------------------------------------------------------------------------------------------
+function DetermineContinents()
+	print("Determining continents for art purposes - Planet Simulator")
+	-- Each plot has a continent art type. Mixing and matching these could look
+	-- extremely bad, but there is nothing technical to prevent it. The worst
+	-- that will happen is that it can't find a blend and draws red checkerboards.
+
+	-- Command for setting the art type for a plot is: <plot object>:SetContinentArtType(<art_set_number>)
+
+	-- CONTINENTAL ART SETS
+	-- 0) Ocean
+	-- 1) America
+	-- 2) Asia
+	-- 3) Africa
+	-- 4) Europe
+
+	-- Here is an example that sets all land in the world to use the European art set.
+
+--~ 	for i, plot in Plots() do
+--~ 		if plot:IsWater() then
+--~ 			plot:SetContinentArtType(0)
+--~ 		else
+--~ 			plot:SetContinentArtType(4)
+--~ 		end
+--~ 	end
+
+	-- local continentMap = PWAreaMap:New(elevationMap.width,elevationMap.height,elevationMap.wrapX,elevationMap.wrapY)
+	-- continentMap:DefineAreas(oceanMatch)
+	-- table.sort(continentMap.areaList,function (a,b) return a.size > b.size end)
+
+	-- --check for jungle
+	-- for y=0,elevationMap.height - 1,1 do
+		-- for x=0,elevationMap.width - 1,1 do
+			-- local i = elevationMap:GetIndex(x,y)
+			-- local area = continentMap:GetAreaByID(continentMap.data[i])
+			-- area.hasJungle = false
+		-- end
+	-- end
+	-- for y=0,elevationMap.height - 1,1 do
+		-- for x=0,elevationMap.width - 1,1 do
+			-- local plot = Map.GetPlot(x,y)
+			-- if plot:GetFeatureType() == FeatureTypes.FEATURE_JUNGLE then
+				-- local i = elevationMap:GetIndex(x,y)
+				-- local area = continentMap:GetAreaByID(continentMap.data[i])
+				-- area.hasJungle = true
+			-- end
+		-- end
+	-- end
+	-- local firstArtStyle = PWRandInt(1,3)
+	-- print(string.format("firstArtStyle = %d",firstArtStyle))
+	-- for n=1,#continentMap.areaList do
+		-- --print(string.format("area[%d] size = %d",n,desertMap.areaList[n].size))
+		-- --if not continentMap.areaList[n].trueMatch and not continentMap.areaList[n].hasJungle then
+		-- if not continentMap.areaList[n].trueMatch then
+			-- continentMap.areaList[n].artStyle = (firstArtStyle % 4) + 1
+			-- --print(string.format("area[%d] size = %d, artStyle = %d",n,continentMap.areaList[n].size,continentMap.areaList[n].artStyle))
+			-- firstArtStyle = firstArtStyle + 1
+		-- end
+	-- end
+	-- for y=0,elevationMap.height - 1,1 do
+		-- for x=0,elevationMap.width - 1,1 do
+			-- local plot = Map.GetPlot(x,y)
+			-- local i = elevationMap:GetIndex(x,y)
+			-- local area = continentMap:GetAreaByID(continentMap.data[i])
+			-- local artStyle = area.artStyle
+			-- if plot:IsWater() then
+				-- plot:SetContinentArtType(0)
+			-- -- elseif jungleMatch(x,y) then
+				-- -- plot:SetContinentArtType(4)
+			-- else
+				-- plot:SetContinentArtType(artStyle)
+			-- end
+		-- end
+	-- end
+	-- -- Africa has the best looking deserts, so for the biggest
+	-- -- desert use Africa. America has a nice dirty looking desert also, so
+	-- -- that should be the second biggest desert.
+	-- local desertMap = PWAreaMap:New(elevationMap.width,elevationMap.height,elevationMap.wrapX,elevationMap.wrapY)
+	-- desertMap:DefineAreas(desertMatch)
+	-- table.sort(desertMap.areaList,function (a,b) return a.size > b.size end)
+	-- local largestDesertID = nil
+	-- local secondLargestDesertID = nil
+	-- for n=1,#desertMap.areaList do
+		-- --print(string.format("area[%d] size = %d",n,desertMap.areaList[n].size))
+		-- if desertMap.areaList[n].trueMatch then
+			-- if largestDesertID == nil then
+				-- largestDesertID = desertMap.areaList[n].id
+			-- else
+				-- secondLargestDesertID = desertMap.areaList[n].id
+				-- break
+			-- end
+		-- end
+	-- end
+	-- for y=0,elevationMap.height - 1,1 do
+		-- for x=0,elevationMap.width - 1,1 do
+			-- local plot = Map.GetPlot(x,y)
+			-- local i = elevationMap:GetIndex(x,y)
+			-- if desertMap.data[i] == largestDesertID then
+				-- plot:SetContinentArtType(3)
+			-- elseif desertMap.data[i] == secondLargestDesertID then
+				-- plot:SetContinentArtType(1)
+			-- end
+		-- end
+	-- end
+	Map.DefaultContinentStamper();
+	-- continentMap:Save4("continentMap.csv")
+	print(string.format("Generated map in %.3f seconds.", os.clock() - Time))
+end
+
+------------------------------------------------------------------------------
+
+--~ mc = MapConstants:New()
+--~ PWRandSeed()
+
+--~ elevationMap = GenerateElevationMap(100,70,true,false)
+--~ FillInLakes()
+--~ elevationMap:Save("elevationMap.csv")
+
+--~ rainfallMap, temperatureMap = GenerateRainfallMap(elevationMap)
+--~ temperatureMap:Save("temperatureMap.csv")
+--~ rainfallMap:Save("rainfallMap.csv")
+
+--~ riverMap = RiverMap:New(elevationMap)
+--~ riverMap:SetJunctionAltitudes()
+--~ riverMap:SiltifyLakes()
+--~ riverMap:SetFlowDestinations()
+--~ riverMap:SetRiverSizes(rainfallMap)
+
 function AssignStartingPlots:CanBeThisNaturalWonderType(x, y, wn, rn)
     -- Forces certain wonders to always fail this check.
     for i = 1, #mc.banNWs do
@@ -6238,225 +6461,3 @@ function AssignStartingPlots:PlaceNaturalWondersMOD()
 
 end
 -------------------------------------------------------------------------------------------
-function StartPlotSystem()
-	-- Get Resources setting input by user.
-	local res = Map.GetCustomOption(5)
-	if res == 6 then
-		res = 1 + Map.Rand(3, "Random Resources Option - Lua");
-	end
-
-	local starts = Map.GetCustomOption(7)
-	local divMethod = nil
-	if starts == 1 then
-		divMethod = 2
-	else
-		divMethod = 1
-	end
-
-	print("Creating start plot database.");
-	local start_plot_database = AssignStartingPlots.Create()
-
-	print("Dividing the map in to Regions.");
-	-- Regional Division Method 2: Continental or 1:Terra
-	local args = {
-		method = divMethod,
-		resources = res,
-		};
-	start_plot_database:GenerateRegions(args)
-
-	print("Choosing start locations for civilizations.");
-	start_plot_database:ChooseLocations()
-
-	print("Normalizing start locations and assigning them to Players.");
-	start_plot_database:BalanceAndAssign()
-
-	print("Placing Natural Wonders.");
-    if YieldTypes.YIELD_FAITH then
-        --print("Expansion detected; using modified NW placement.")
-        PlaceNaturalWonders = PlaceNaturalWondersMOD
-    -- else
-        --print("No expansion detected; using vanilla NW placement.")
-    end
-    start_plot_database:PlaceNaturalWonders()
-
-	print("Placing Resources and City States.");
-	start_plot_database:PlaceResourcesAndCityStates()
-end
--------------------------------------------------------------------------------------------
-function oceanMatch(x,y)
-	local plot = Map.GetPlot(x,y)
-	if plot:GetPlotType() == PlotTypes.PLOT_OCEAN then
-		return true
-	end
-	return false
-end
--------------------------------------------------------------------------------------------
--- function jungleMatch(x,y)
-	-- local terrainGrass	= GameInfoTypes["TERRAIN_GRASS"];
-	-- local plot = Map.GetPlot(x,y)
-	-- if plot:GetFeatureType() == FeatureTypes.FEATURE_JUNGLE then
-		-- return true
-	-- --include any mountains on the border as part of the desert.
-	-- elseif (plot:GetFeatureType() == FeatureTypes.FEATURE_MARSH or plot:GetFeatureType() == FeatureTypes.FEATURE_FOREST) and plot:GetTerrainType() == terrainGrass then
-		-- local nList = elevationMap:GetRadiusAroundHex(x,y,1,W)
-		-- for n=1,#nList do
-			-- local ii = nList[n]
-			-- if 11 ~= -1 then
-				-- local nPlot = Map.GetPlotByIndex(ii)
-				-- if nPlot:GetFeatureType() == FeatureTypes.FEATURE_JUNGLE then
-					-- return true
-				-- end
-			-- end
-		-- end
-	-- end
-	-- return false
--- end
--------------------------------------------------------------------------------------------
-function desertMatch(i)
-	local W,H = Map.GetGridSize();
-	local terrainDesert	= GameInfoTypes["TERRAIN_DESERT"];
-	local plot = Map.GetPlotByIndex(i)
-	if plot:GetTerrainType() == terrainDesert then
-		return true
-	--include any mountains on the border as part of the desert.
-	elseif plot:GetPlotType() == PlotTypes.PLOT_MOUNTAIN then
-		local nList = GetCircle(i,1)
-		for n=1,#nList do
-			local ii = nList[n]
-			if 11 ~= -1 then
-				local nPlot = Map.GetPlotByIndex(ii)
-				if nPlot:GetPlotType() ~= PlotTypes.PLOT_MOUNTAIN and nPlot:GetTerrainType() == terrainDesert then
-					return true
-				end
-			end
-		end
-	end
-	return false
-end
--------------------------------------------------------------------------------------------
-function DetermineContinents()
-	print("Determining continents for art purposes - Planet Simulator")
-	-- Each plot has a continent art type. Mixing and matching these could look
-	-- extremely bad, but there is nothing technical to prevent it. The worst
-	-- that will happen is that it can't find a blend and draws red checkerboards.
-
-	-- Command for setting the art type for a plot is: <plot object>:SetContinentArtType(<art_set_number>)
-
-	-- CONTINENTAL ART SETS
-	-- 0) Ocean
-	-- 1) America
-	-- 2) Asia
-	-- 3) Africa
-	-- 4) Europe
-
-	-- Here is an example that sets all land in the world to use the European art set.
-
---~ 	for i, plot in Plots() do
---~ 		if plot:IsWater() then
---~ 			plot:SetContinentArtType(0)
---~ 		else
---~ 			plot:SetContinentArtType(4)
---~ 		end
---~ 	end
-
-	-- local continentMap = PWAreaMap:New(elevationMap.width,elevationMap.height,elevationMap.wrapX,elevationMap.wrapY)
-	-- continentMap:DefineAreas(oceanMatch)
-	-- table.sort(continentMap.areaList,function (a,b) return a.size > b.size end)
-
-	-- --check for jungle
-	-- for y=0,elevationMap.height - 1,1 do
-		-- for x=0,elevationMap.width - 1,1 do
-			-- local i = elevationMap:GetIndex(x,y)
-			-- local area = continentMap:GetAreaByID(continentMap.data[i])
-			-- area.hasJungle = false
-		-- end
-	-- end
-	-- for y=0,elevationMap.height - 1,1 do
-		-- for x=0,elevationMap.width - 1,1 do
-			-- local plot = Map.GetPlot(x,y)
-			-- if plot:GetFeatureType() == FeatureTypes.FEATURE_JUNGLE then
-				-- local i = elevationMap:GetIndex(x,y)
-				-- local area = continentMap:GetAreaByID(continentMap.data[i])
-				-- area.hasJungle = true
-			-- end
-		-- end
-	-- end
-	-- local firstArtStyle = PWRandInt(1,3)
-	-- print(string.format("firstArtStyle = %d",firstArtStyle))
-	-- for n=1,#continentMap.areaList do
-		-- --print(string.format("area[%d] size = %d",n,desertMap.areaList[n].size))
-		-- --if not continentMap.areaList[n].trueMatch and not continentMap.areaList[n].hasJungle then
-		-- if not continentMap.areaList[n].trueMatch then
-			-- continentMap.areaList[n].artStyle = (firstArtStyle % 4) + 1
-			-- --print(string.format("area[%d] size = %d, artStyle = %d",n,continentMap.areaList[n].size,continentMap.areaList[n].artStyle))
-			-- firstArtStyle = firstArtStyle + 1
-		-- end
-	-- end
-	-- for y=0,elevationMap.height - 1,1 do
-		-- for x=0,elevationMap.width - 1,1 do
-			-- local plot = Map.GetPlot(x,y)
-			-- local i = elevationMap:GetIndex(x,y)
-			-- local area = continentMap:GetAreaByID(continentMap.data[i])
-			-- local artStyle = area.artStyle
-			-- if plot:IsWater() then
-				-- plot:SetContinentArtType(0)
-			-- -- elseif jungleMatch(x,y) then
-				-- -- plot:SetContinentArtType(4)
-			-- else
-				-- plot:SetContinentArtType(artStyle)
-			-- end
-		-- end
-	-- end
-	-- -- Africa has the best looking deserts, so for the biggest
-	-- -- desert use Africa. America has a nice dirty looking desert also, so
-	-- -- that should be the second biggest desert.
-	-- local desertMap = PWAreaMap:New(elevationMap.width,elevationMap.height,elevationMap.wrapX,elevationMap.wrapY)
-	-- desertMap:DefineAreas(desertMatch)
-	-- table.sort(desertMap.areaList,function (a,b) return a.size > b.size end)
-	-- local largestDesertID = nil
-	-- local secondLargestDesertID = nil
-	-- for n=1,#desertMap.areaList do
-		-- --print(string.format("area[%d] size = %d",n,desertMap.areaList[n].size))
-		-- if desertMap.areaList[n].trueMatch then
-			-- if largestDesertID == nil then
-				-- largestDesertID = desertMap.areaList[n].id
-			-- else
-				-- secondLargestDesertID = desertMap.areaList[n].id
-				-- break
-			-- end
-		-- end
-	-- end
-	-- for y=0,elevationMap.height - 1,1 do
-		-- for x=0,elevationMap.width - 1,1 do
-			-- local plot = Map.GetPlot(x,y)
-			-- local i = elevationMap:GetIndex(x,y)
-			-- if desertMap.data[i] == largestDesertID then
-				-- plot:SetContinentArtType(3)
-			-- elseif desertMap.data[i] == secondLargestDesertID then
-				-- plot:SetContinentArtType(1)
-			-- end
-		-- end
-	-- end
-	Map.DefaultContinentStamper();
-	-- continentMap:Save4("continentMap.csv")
-	print(string.format("Generated map in %.3f seconds.", os.clock() - Time))
-end
-
-------------------------------------------------------------------------------
-
---~ mc = MapConstants:New()
---~ PWRandSeed()
-
---~ elevationMap = GenerateElevationMap(100,70,true,false)
---~ FillInLakes()
---~ elevationMap:Save("elevationMap.csv")
-
---~ rainfallMap, temperatureMap = GenerateRainfallMap(elevationMap)
---~ temperatureMap:Save("temperatureMap.csv")
---~ rainfallMap:Save("rainfallMap.csv")
-
---~ riverMap = RiverMap:New(elevationMap)
---~ riverMap:SetJunctionAltitudes()
---~ riverMap:SiltifyLakes()
---~ riverMap:SetFlowDestinations()
---~ riverMap:SetRiverSizes(rainfallMap)
