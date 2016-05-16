@@ -804,6 +804,16 @@ function GetMapScriptInfo()
 				DefaultValue = 2,
 				SortPriority = 4,
 			},
+			{
+				Name = "Resource Placement Method",
+				Values =
+				{
+					"Standard"
+					"Communitas-style"
+				},
+				DefaultValue = 1,
+				SortPriority = 5,
+			},
 			--[[
 			{
 				Name = "Lakes",
@@ -6468,34 +6478,32 @@ function AssignStartingPlots:__CustomInit()
 	-- This function included to provide a quick and easy override for changing 
 	-- any initial settings. Add your customized version to the map script.
 	--TODO: This function is empty in base CiV -- this is the setup for the Communitas ASP functions
-	--[[
-	if not debugPrint then
-		print = function() end
-	end
-	--]]
+	local ASPStyle = Map.GetCustomOption(10)
 	self.islandAreaBuffed = {}
 	--Reassignment (TODO)
-	self.MeasureStartPlacementFertilityOfPlot = AssignStartingPlots.MeasureStartPlacementFertilityOfPlotCOMM
-	self.GenerateRegions = AssignStartingPlots.GenerateRegionsCOMM
-	self.ExaminePlotForNaturalWondersEligibility = AssignStartingPlots.ExaminePlotForNaturalWondersEligibilityCOMM
-	self.PlaceNaturalWonders = AssignStartingPlots.PlaceNaturalWondersCOMM
-	self.CanPlaceCityStateAt = AssignStartingPlots.CanPlaceCityStateAtCOMM
-	self.PlaceCityStateInRegion = AssignStartingPlots.PlaceCityStateInRegionCOMM
-	self.BuffIslands = AssignStartingPlots.BuffIslandsCOMM
-	self.AdjustTiles = AssignStartingPlots.AdjustTilesCOMM
-	self.BuffDeserts = AssignStartingPlots.BuffDeserts
-	self.ProcessResourceList = AssignStartingPlots.ProcessResourceListCOMM
-	self.PlaceSpecificNumberOfResources = AssignStartingPlots.PlaceSpecificNumberOfResources
-	self.GetMajorStrategicResourceQuantityValues = AssignStartingPlots.GetMajorStrategicResourceQuantityValuesCOMM
-	self.GetSmallStrategicResourceQuantityValues = AssignStartingPlots.GetSmallStrategicResourceQuantityValuesCOMM
-	self.PlaceOilInTheSea = AssignStartingPlots.PlaceOilInTheSeaCOMM
-	self.PlaceStrategicAndBonusResources = AssignStartingPlots.PlaceStrategicAndBonusResourcesCOMM
-	self.PlaceFish = AssignStartingPlots.PlaceFishCOMM
-	self.PlacePossibleFish = AssignStartingPlots.PlacePossibleFish
-	self.PlaceBonusResources = AssignStartingPlots.PlaceBonusResourcesCOMM
-	self.PlaceResourcesAndCityStates = AssignStartingPlots.PlaceResourcesAndCityStatesCOMM
-	self.NormalizeStartLocation = AssignStartingPlots.NormalizeStartLocationCOMM
-	self.BalanceAndAssign = AssignStartingPlots.BalanceAndAssignCOMM
+	if ASPStyle == 2 then
+		self.MeasureStartPlacementFertilityOfPlot = AssignStartingPlots.MeasureStartPlacementFertilityOfPlotCOMM
+		self.GenerateRegions = AssignStartingPlots.GenerateRegionsCOMM
+		self.ExaminePlotForNaturalWondersEligibility = AssignStartingPlots.ExaminePlotForNaturalWondersEligibilityCOMM
+		self.PlaceNaturalWonders = AssignStartingPlots.PlaceNaturalWondersCOMM
+		self.CanPlaceCityStateAt = AssignStartingPlots.CanPlaceCityStateAtCOMM
+		self.PlaceCityStateInRegion = AssignStartingPlots.PlaceCityStateInRegionCOMM
+		self.BuffIslands = AssignStartingPlots.BuffIslandsCOMM
+		self.AdjustTiles = AssignStartingPlots.AdjustTilesCOMM
+		self.BuffDeserts = AssignStartingPlots.BuffDeserts
+		self.ProcessResourceList = AssignStartingPlots.ProcessResourceListCOMM
+		self.PlaceSpecificNumberOfResources = AssignStartingPlots.PlaceSpecificNumberOfResources
+		self.GetMajorStrategicResourceQuantityValues = AssignStartingPlots.GetMajorStrategicResourceQuantityValuesCOMM
+		self.GetSmallStrategicResourceQuantityValues = AssignStartingPlots.GetSmallStrategicResourceQuantityValuesCOMM
+		self.PlaceOilInTheSea = AssignStartingPlots.PlaceOilInTheSeaCOMM
+		self.PlaceStrategicAndBonusResources = AssignStartingPlots.PlaceStrategicAndBonusResourcesCOMM
+		self.PlaceFish = AssignStartingPlots.PlaceFishCOMM
+		self.PlacePossibleFish = AssignStartingPlots.PlacePossibleFish
+		self.PlaceBonusResources = AssignStartingPlots.PlaceBonusResourcesCOMM
+		self.PlaceResourcesAndCityStates = AssignStartingPlots.PlaceResourcesAndCityStatesCOMM
+		self.NormalizeStartLocation = AssignStartingPlots.NormalizeStartLocationCOMM
+		self.BalanceAndAssign = AssignStartingPlots.BalanceAndAssignCOMM
+	end
 end	
 ------------------------------------------------------------------------------
 function AssignStartingPlots:MeasureStartPlacementFertilityOfPlotCOMM(x, y, checkForCoastalLand)
