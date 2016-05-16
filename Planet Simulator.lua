@@ -6480,8 +6480,10 @@ function AssignStartingPlots:__CustomInit()
 	--TODO: This function is empty in base CiV -- this is the setup for the Communitas ASP functions
 	local ASPStyle = Map.GetCustomOption(10)
 	self.islandAreaBuffed = {}
-	--Reassignment (TODO)
 	if ASPStyle == 2 then
+		--TODO: If we use the Communitas resource & natural wonder placement code as below,
+		--for some reason it causes marshes to appear as tundra (but act as marshes).
+		--No idea why.
 		self.MeasureStartPlacementFertilityOfPlot = AssignStartingPlots.MeasureStartPlacementFertilityOfPlotCOMM
 		self.GenerateRegions = AssignStartingPlots.GenerateRegionsCOMM
 		self.ExaminePlotForNaturalWondersEligibility = AssignStartingPlots.ExaminePlotForNaturalWondersEligibilityCOMM
