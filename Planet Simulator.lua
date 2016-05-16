@@ -805,11 +805,11 @@ function GetMapScriptInfo()
 				SortPriority = 4,
 			},
 			{
-				Name = "Resource Placement Method",
+				Name = "Resource Method",
 				Values =
 				{
-					"Standard"
-					"Communitas-style"
+					"Standard",
+					"Communitas-style (Unstable)"
 				},
 				DefaultValue = 1,
 				SortPriority = 5,
